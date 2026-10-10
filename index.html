@@ -22,7 +22,6 @@
     image-rendering: -webkit-optimize-contrast;
     cursor: none;
   }
-  #game.menu-open { cursor: default; }
   #rotate {
     position: fixed; inset: 0;
     background: #000;
@@ -105,7 +104,7 @@ const LEVEL_NAMES = [
 ];
 
 // ============================================================
-// CANVAS — рендер в реальном разрешении окна
+// CANVAS
 // ============================================================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d", { alpha: false });
@@ -337,7 +336,7 @@ const SPR_PISTOL = makePistol();
 const SPR_SHOTGUN = makeShotgun();
 
 // ============================================================
-// ЗВУК (Web Audio)
+// ЗВУК
 // ============================================================
 let audioCtx = null;
 function ensureAudio() {
@@ -405,7 +404,7 @@ function resetProgress() {
 }
 
 // ============================================================
-// СОСТОЯНИЕ ИГРЫ
+// СОСТОЯНИЕ
 // ============================================================
 const GAME_STATE = {
   MENU: "menu",
@@ -433,7 +432,6 @@ let lastTime = 0;
 let aiming = false;
 let mouseDX = 0;
 
-// тач
 const touch = {
   moveTouchId: null,
   moveStartX: 0, moveStartY: 0,
@@ -594,7 +592,7 @@ function shoot() {
 }
 
 // ============================================================
-// РЕНДЕР
+// РЕНДЕР МИРА
 // ============================================================
 function renderWalls() {
   const gh = grid.length, gw = grid[0].length;
@@ -662,10 +660,8 @@ function drawTexturedColumn(x, y, w, h, tex, texX, shade) {
     drawH -= cut;
   }
   if (drawH <= 0) return;
-
   const strip = getStrip(tex, texX);
   ctx.drawImage(strip, 0, srcY0, 1, Math.max(1, srcY1 - srcY0), x, drawY, w, drawH);
-
   if (shade < 1) {
     ctx.fillStyle = "rgba(0,0,0," + (1 - shade) + ")";
     ctx.fillRect(x, drawY, w, drawH);
@@ -728,7 +724,6 @@ function renderWeapon() {
   if (aiming) cy = VH - h / 2 - 30;
   else cy = VH - h / 2 + 90 + player.anim * 40;
   const cx = VW / 2;
-
   if (player.flash > 0) {
     ctx.save();
     ctx.globalAlpha = 0.5 * player.flash;
@@ -1159,6 +1154,54 @@ function drawConfirmDialog(dt) {
 }
 
 // ============================================================
+// КАСТОМНЫЙ КУРСОР (в меню) — красный крест с точкой
+// ============================================================
+function drawCursor(now) {
+  if (state === GAME_STATE.PLAYING) return;
+  const x = mouseX, y = mouseY;
+  const pulse = 0.5 + 0.5 * Math.sin(now * 0.005);
+
+  // свечение
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, 18);
+  glow.addColorStop(0, "rgba(255, 60, 60, " + (0.25 + 0.15 * pulse) + ")");
+  glow.addColorStop(1, "rgba(255, 60, 60, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(x, y, 18, 0, 7);
+  ctx.fill();
+
+  const len = 9 + pulse * 2;
+  const gap = 4;
+
+  // тёмная обводка креста (нижний слой)
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
+  ctx.moveTo(x + gap, y);       ctx.lineTo(x + gap + len, y);
+  ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
+  ctx.moveTo(x, y + gap);       ctx.lineTo(x, y + gap + len);
+  ctx.stroke();
+
+  // светлый крест
+  ctx.strokeStyle = "rgba(255, 240, 240, 0.98)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
+  ctx.moveTo(x + gap, y);       ctx.lineTo(x + gap + len, y);
+  ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
+  ctx.moveTo(x, y + gap);       ctx.lineTo(x, y + gap + len);
+  ctx.stroke();
+
+  // точка в центре с обводкой
+  ctx.fillStyle = "#ffdcdc";
+  ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill();
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.stroke();
+}
+
+// ============================================================
 // ВВОД
 // ============================================================
 let mouseX = VW / 2, mouseY = VH / 2;
@@ -1182,11 +1225,11 @@ window.addEventListener("keydown", (e) => {
       if (win) advanceAfterWin(); else exitToMenu();
     }
   }
-  if ((e.key === "r" || e.key === "к" || e.code === "KeyR") 
+  if ((e.key === "r" || e.key === "к" || e.code === "KeyR")
       && state === GAME_STATE.PLAYING && (gameOver || win)) {
     loadLevel(levelIdx);
   }
-  if ((e.key === "q" || e.key === "й" || e.code === "KeyQ") 
+  if ((e.key === "q" || e.key === "й" || e.code === "KeyQ")
       && state === GAME_STATE.PLAYING && !gameOver && !win) {
     player.weapon = player.weapon === "pistol" ? "shotgun" : "pistol";
   }
@@ -1246,7 +1289,7 @@ canvas.addEventListener("wheel", (e) => {
 // ТАЧ
 // ============================================================
 const JOY_R = 70;
-const JOY_X = 100, JOY_Y = 110;   // координаты относительно низа
+const JOY_X = 100, JOY_Y = 110;
 const FIRE_BTN = { x: 90, y: 110, r: 50 };
 const AIM_BTN  = { x: 210, y: 110, r: 40 };
 const SWAP_BTN = { x: 210, y: 210, r: 40 };
@@ -1268,7 +1311,6 @@ function onTouchStart(e) {
     const rect = canvas.getBoundingClientRect();
     const x = (t.clientX - rect.left) / rect.width * VW;
     const y = (t.clientY - rect.top) / rect.height * VH;
-    const joyX = JOY_X, joyY = VH - JOY_Y;
     const fireX = VW - FIRE_BTN.x, fireY = VH - FIRE_BTN.y;
     const aimX = VW - AIM_BTN.x, aimY = VH - AIM_BTN.y;
     const swapX = VW - SWAP_BTN.x, swapY = VH - SWAP_BTN.y;
@@ -1277,9 +1319,7 @@ function onTouchStart(e) {
       if (!gameOver && !win) shoot();
       continue;
     }
-    if (dist2(x, y, aimX, aimY) < AIM_BTN.r * AIM_BTN.r) {
-      aiming = true; continue;
-    }
+    if (dist2(x, y, aimX, aimY) < AIM_BTN.r * AIM_BTN.r) { aiming = true; continue; }
     if (dist2(x, y, swapX, swapY) < SWAP_BTN.r * SWAP_BTN.r) {
       if (!gameOver && !win) player.weapon = player.weapon === "pistol" ? "shotgun" : "pistol";
       continue;
@@ -1344,7 +1384,7 @@ canvas.addEventListener("touchend", onTouchEnd, { passive: false });
 canvas.addEventListener("touchcancel", onTouchEnd, { passive: false });
 
 // ============================================================
-// МЕНЮ КЛИКИ
+// КЛИКИ МЕНЮ
 // ============================================================
 function handleMenuClick(mx, my) {
   if (state === GAME_STATE.MENU) {
@@ -1538,7 +1578,7 @@ function render(dt) {
     const hint = "Открыто уровней: " + unlocked + " / " + LEVELS_RAW.length + "   |   ESC — выход";
     ctx.fillText(hint, VW / 2 - ctx.measureText(hint).width / 2, VH - 35);
     ctx.fillStyle = "#64647c";
-    ctx.fillText("v2.1-js", VW - 80, VH - 15);
+    ctx.fillText("v2.2-js", VW - 80, VH - 15);
   } else if (state === GAME_STATE.LEVELS) {
     drawLevelsScreen(dt);
   } else if (state === GAME_STATE.SETTINGS) {
@@ -1575,6 +1615,9 @@ function render(dt) {
       ctx.fillText(sub, VW / 2 - ctx.measureText(sub).width / 2, VH / 2 + 30);
     }
   }
+
+  // Кастомный курсор рисуем поверх всего (кроме игры)
+  drawCursor(performance.now());
 }
 
 function loop(now) {
