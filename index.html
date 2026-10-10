@@ -54,6 +54,7 @@ const HALF_FOV = FOV / 2;
 const MAX_DEPTH = 24;
 const DAMAGE_INDICATOR_LIFETIME = 1.2;
 const STORAGE_KEY = "python_doom_progress_v2";
+const STORAGE_VOLUME = "python_doom_volume_v1";
 
 let VW = 960, VH = 600;
 
@@ -61,7 +62,6 @@ let VW = 960, VH = 600;
 // КАРТЫ — 50 уровней
 // ============================================================
 const LEVELS_RAW = [
-  // 1-10 (были)
   ["1111111111111111","1000000010000001","1011100010111001","1010000000010001","1010111110010001","1000100010000001","1110101010111101","1000101000100001","1011101111101101","1000001000001001","1011111011101001","1010000010000001","1010111010111101","1000100010000001","1011100010111002","1111111111111111"],
   ["11111111111111111111","10000000001000000001","10111111001011111001","10100001000010001001","10101101011010101001","10101000001000100001","10101111101011101101","10001000100010000001","11111010111010111101","10000010000010000001","10111110111110111001","10100000100000100001","10101110101110101101","10001000100000100001","10111011111011101101","10000010000000000001","10111110111111111001","10000000100000001001","10111110101111101002","11111111111111111111"],
   ["11111111111111111111","10000001001000000001","10000001001000000001","10000001001000000001","10000001001000000001","10000000000000000001","10000000000000000001","10000001001000000001","10000001001000000001","11111101001011111111","10000000000000000001","10000000000000000001","10000001001000000001","10000001001000000001","10000001001000000002","10000001001000000001","11111111111111111111"],
@@ -72,7 +72,6 @@ const LEVELS_RAW = [
   ["11111111111111111111","10000000000000000001","10000001111000000001","10000001001000000001","10000001001000000001","10000000000000000001","11110000000000001111","10000000000000000001","10000000000000000001","10000001001000000001","10000001001000000001","10000001111000000001","10000000000000000001","10111111111111111101","10000000000000000002","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010000000000000001001","1010111111111111101001","1010100000000000101001","1010101111111100101001","1010101000000100101001","1010101011100100101001","1010101000100100101001","1010101000100100101001","1010101000111100101001","1010101000000000101001","1010101111111111101001","1010100000000000001001","1010111111111111111001","1010000000000000000001","1011111111111111111102","1000000000000000000001","1111111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1000110000000000110001","1000110000000000110001","1000000000000000000001","1000000011100000000001","1000000011100000000001","1000000000000000000001","1011100000000000011101","1011100000000000011101","1000000000000000000001","1000000011100000000001","1000000011100000000001","1000000000000000000001","1000110000000000110001","1000110000000000110001","1000000000000000000001","1011111111111111111102","1000000000000000000001","1111111111111111111111"],
-  // 11-20
   ["11111111111111111111","10000000000000000001","10111101111011110001","10100001000000010001","10101111011111010101","10100000010000010001","10111111010111110101","10000001010000000101","11111101011111110101","10000101010000000101","10110101010111111101","10100101010000000001","10110101010111111101","10000100010000000001","10111111011111111102","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010100101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011101110111011001","10010001000100010001","10010101010101010101","10010100010001000101","10010111011101110101","10010000000000000001","10011101110111011101","10000000010001000001","10111011010101011101","10001000010001000001","10101111011101111101","10000000000000000001","10111101110111111102","10000000000000000001","11111111111111111111"],
@@ -83,7 +82,6 @@ const LEVELS_RAW = [
   ["11111111111111111111","10000000000000000001","10101010101010101001","10101010101010101001","10101010101010101001","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10101010101010101002","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
   ["11111111111111111111","10000000000000000001","10110111011011101101","10010001001000100001","10110101011010101101","10000101000010100001","10110101111010111101","10010001000010000001","10110101111011101101","10000000000000000001","10111111011111011101","10001000010000010001","10101111011111010101","10100000000000010101","10101111111111011102","10000000000000000001","11111111111111111111"],
-  // 21-30
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","10111110111110111101","10000010000010000001","10000010000010000001","10111110111110111101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"],
@@ -94,7 +92,6 @@ const LEVELS_RAW = [
   ["11111111111111111111","10000000000000000001","10110110110110110101","10100100100100100101","10110110110110110101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10110110110110110102","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1001100110011001100101","1001001001001001000101","1001100110011001100101","1000000000000000000001","1111111111111111111101","1000000000000000000101","1011111111111111110101","1010000000000000010101","1010111111111111010101","1010100000000001010101","1010101111111101010101","1010101000000101010101","1010101011110101010102","1010100000000001010101","1010111111111111110101","1000000000000000000001","1111111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
-  // 31-40 новые
   ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000010000101","10101111011110110101","10100000000000000101","10111111101111110101","10000001001000000101","10111101001111110101","10100101001000000101","10110101001111111101","10100101001000000001","10110101001111111101","10000100000000000001","10111111011111111102","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","11110111101111011101","10000100010000010001","10000100010000010001","11110111101111011101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000000000101","10101111011111110101","10000000010000000101","10111111010111110101","10000001010000000101","11111101011111110101","10000101010000000001","10110101011111111101","10100101000000000101","10110101011111110101","10000000000000000101","10111111011111111102","10000000000000000001","11111111111111111111"],
@@ -104,7 +101,6 @@ const LEVELS_RAW = [
   ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000000000101","10101111011111110101","10000000010000000101","10111111010111110101","10000001010000000101","11111101011111110101","10000101010000000001","10110101011111111101","10100101000000000101","10110101011111110101","10000000000000000101","10111111011111111102","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","11110111101111011101","10000100010000010001","10000100010000010001","11110111101111011101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10101010101010101001","10100010001000100001","10101110111011101101","10001000100010000001","11101110111011101101","10000000000000000001","10111011101110111001","10000010001000100001","10111010111010101101","10001000100010001001","10101110111011101001","10100000000000001001","10101110111011111002","10000000000000000001","11111111111111111111"],
-  // 41-50 финальные
   ["11111111111111111111","10000000000000000001","10110110110110110101","10100100100100100101","10110110110110110101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10110110110110110102","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","10111110111110111101","10000010000010000001","10000010000010000001","10111110111110111101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
@@ -116,11 +112,9 @@ const LEVELS_RAW = [
   ["11111111111111111111","10000000000000000001","10101010101010101001","10100010001000100001","10101110111011101101","10001000100010000001","11101110111011101101","10000000000000000001","10111011101110111001","10000010001000100001","10111010111010101101","10001000100010001001","10101110111011101001","10100000000000001001","10101110111011111002","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","10111110111110111101","10000010000010000001","10000010000010000001","10111110111110111101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
   ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
-  // 50-й — последний обычный
   ["11111111111111111111","10000000000000000001","10110111011011101101","10010001001000100001","10110101011010101101","10000101000010100001","10110101111010111101","10010001000010000001","10110101111011101101","10000000000000000001","10111111011111011101","10001000010000010001","10101111011111010101","10100000000000010101","10101111111111011102","10000000000000000001","11111111111111111111"]
 ];
 
-// Арена босса (после 50 уровня)
 const BOSS_ARENA = [
   "1111111111111111111111111111",
   "1000000000000000000000000001",
@@ -168,16 +162,60 @@ function resizeCanvas() {
   const maxW = 1920, maxH = 1080;
   const w = Math.max(800, Math.min(window.innerWidth, maxW));
   const h = Math.max(500, Math.min(window.innerHeight, maxH));
-  VW = w;
-  VH = h;
-  canvas.width = VW;
-  canvas.height = VH;
+  VW = w; VH = h;
+  canvas.width = VW; canvas.height = VH;
   canvas.style.width = window.innerWidth + "px";
   canvas.style.height = window.innerHeight + "px";
   ctx.imageSmoothingEnabled = false;
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+// ============================================================
+// ЗВУК — с громкостью
+// ============================================================
+let audioCtx = null;
+let masterVolume = 0.7;   // 0..1
+
+(function loadVolume() {
+  try {
+    const v = parseFloat(localStorage.getItem(STORAGE_VOLUME));
+    if (!isNaN(v)) masterVolume = Math.max(0, Math.min(1, v));
+  } catch (e) {}
+})();
+
+function saveVolume() {
+  try { localStorage.setItem(STORAGE_VOLUME, String(masterVolume)); } catch (e) {}
+}
+
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { audioCtx = null; }
+  }
+}
+
+function playTone(type, freqStart, freqEnd, dur, vol) {
+  if (!audioCtx || masterVolume <= 0) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freqStart, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), now + dur);
+  gain.gain.setValueAtTime(vol * masterVolume, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(now); osc.stop(now + dur);
+}
+
+function playShot(kind) {
+  playTone("square", kind === "shotgun" ? 180 : 320, 40,
+           kind === "shotgun" ? 0.18 : 0.09, 0.14);
+}
+function playHit() { playTone("sawtooth", 600, 80, 0.25, 0.18); }
+function playPickup() { playTone("sine", 600, 1200, 0.1, 0.12); }
+function playBossRoar() { playTone("sawtooth", 60, 100, 0.7, 0.25); }
 
 // ============================================================
 // ТЕКСТУРЫ
@@ -238,33 +276,24 @@ function makeEnemySprite() {
 function makeBossSprite() {
   const c = makeCanvas(96, 128);
   const g = c.getContext("2d");
-  // тень под ногами
   g.fillStyle = "rgba(0,0,0,0.5)";
   g.beginPath(); g.ellipse(48, 120, 34, 6, 0, 0, 7); g.fill();
-  // рога
   g.fillStyle = "#3c0a0a";
   g.beginPath(); g.moveTo(20, 20); g.lineTo(12, 2); g.lineTo(28, 16); g.closePath(); g.fill();
   g.beginPath(); g.moveTo(76, 20); g.lineTo(84, 2); g.lineTo(68, 16); g.closePath(); g.fill();
-  // голова
   g.fillStyle = "#5a1010"; g.fillRect(16, 12, 64, 44);
   g.fillStyle = "#3a0808"; g.fillRect(16, 12, 64, 6);
-  // глаза (светящиеся жёлтым)
   g.fillStyle = "#ffcc00";
   g.fillRect(26, 26, 12, 10);
   g.fillRect(58, 26, 12, 10);
   g.fillStyle = "#000";
   g.fillRect(30, 30, 4, 6);
   g.fillRect(62, 30, 4, 6);
-  // рот — острые зубы
   g.fillStyle = "#000"; g.fillRect(28, 44, 40, 10);
   g.fillStyle = "#fff";
-  for (let i = 0; i < 8; i++) {
-    g.fillRect(30 + i * 5, 44, 3, 5);
-  }
-  // тело
+  for (let i = 0; i < 8; i++) g.fillRect(30 + i * 5, 44, 3, 5);
   g.fillStyle = "#7a1a1a"; g.fillRect(12, 58, 72, 58);
   g.fillStyle = "#4a0c0c"; g.fillRect(12, 58, 72, 8);
-  // грудная клетка (рёбра)
   g.strokeStyle = "#b83a3a"; g.lineWidth = 2;
   for (let i = 0; i < 4; i++) {
     g.beginPath();
@@ -272,17 +301,14 @@ function makeBossSprite() {
     g.quadraticCurveTo(48, 76 + i * 12, 76, 68 + i * 12);
     g.stroke();
   }
-  // руки
   g.fillStyle = "#3a0808";
   g.fillRect(0, 62, 14, 46);
   g.fillRect(82, 62, 14, 46);
-  // когти
   g.fillStyle = "#fff";
   for (let i = 0; i < 3; i++) {
     g.fillRect(2 + i * 4, 106, 3, 6);
     g.fillRect(84 + i * 4, 106, 3, 6);
   }
-  // ноги
   g.fillStyle = "#4a0c0c";
   g.fillRect(22, 114, 16, 12);
   g.fillRect(58, 114, 16, 12);
@@ -294,8 +320,7 @@ function makeMedkitSprite() {
   const g = c.getContext("2d");
   g.fillStyle = "rgba(0,0,0,0.5)"; g.fillRect(3, 5, 38, 38);
   g.fillStyle = "#f5f5f5"; g.fillRect(2, 2, 40, 40);
-  g.strokeStyle = "#787878"; g.lineWidth = 2;
-  g.strokeRect(2, 2, 40, 40);
+  g.strokeStyle = "#787878"; g.lineWidth = 2; g.strokeRect(2, 2, 40, 40);
   g.fillStyle = "#dc1e1e";
   g.fillRect(17, 8, 10, 28);
   g.fillRect(8, 17, 28, 10);
@@ -447,70 +472,6 @@ const SPR_PISTOL = makePistol();
 const SPR_SHOTGUN = makeShotgun();
 
 // ============================================================
-// ЗВУК
-// ============================================================
-let audioCtx = null;
-function ensureAudio() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    catch (e) { audioCtx = null; }
-  }
-}
-function playShot(kind) {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-  const dur = kind === "shotgun" ? 0.18 : 0.09;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "square";
-  osc.frequency.setValueAtTime(kind === "shotgun" ? 180 : 320, now);
-  osc.frequency.exponentialRampToValueAtTime(40, now + dur);
-  gain.gain.setValueAtTime(0.14, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + dur);
-}
-function playHit() {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(600, now);
-  osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
-  gain.gain.setValueAtTime(0.18, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + 0.25);
-}
-function playPickup() {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(600, now);
-  osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-  gain.gain.setValueAtTime(0.12, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + 0.12);
-}
-function playBossRoar() {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(60, now);
-  osc.frequency.linearRampToValueAtTime(100, now + 0.6);
-  gain.gain.setValueAtTime(0.25, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + 0.7);
-}
-
-// ============================================================
 // ПРОГРЕСС
 // ============================================================
 function loadProgress() {
@@ -544,9 +505,9 @@ let enemies = [];
 let pickups = [];
 let exitPos = null;
 let zbuffer = new Float32Array(RAYS);
-let levelIdx = 0;             // 0..49 — обычные, 50 — арена босса
+let levelIdx = 0;
 let isBossLevel = false;
-let boss = null;               // ссылка на босса (если есть)
+let boss = null;
 let bossWaveTimer = 0;
 let bossWaveNum = 0;
 
@@ -568,7 +529,7 @@ let isTouchDevice = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 // ЗАГРУЗКА УРОВНЯ
 // ============================================================
 function loadLevel(idx) {
-  isBossLevel = (idx === LEVELS_RAW.length);   // 50-й индекс = арена босса
+  isBossLevel = (idx === LEVELS_RAW.length);
   const raw = isBossLevel ? BOSS_ARENA : LEVELS_RAW[idx];
   const h = raw.length, w = raw[0].length;
   grid = [];
@@ -582,7 +543,6 @@ function loadLevel(idx) {
     }
     grid.push(row);
   }
-
   player = {
     x: 1.5, y: 1.5, angle: 0,
     hp: 100, ammo: isBossLevel ? 200 : 50, score: 0,
@@ -590,23 +550,12 @@ function loadLevel(idx) {
     anim: 0, flash: 0,
     damageIndicators: []
   };
-
-  enemies = [];
-  pickups = [];
-  boss = null;
-  bossWaveTimer = 0;
-  bossWaveNum = 0;
-
+  enemies = []; pickups = []; boss = null;
+  bossWaveTimer = 0; bossWaveNum = 0;
   if (isBossLevel) {
-    // Босс в центре арены
     const bx = w / 2, by = h / 2;
-    boss = {
-      x: bx, y: by, hp: 800, maxHp: 800,
-      timer: 1.5, alive: true, isBoss: true,
-      size: 2.2
-    };
+    boss = { x: bx, y: by, hp: 800, maxHp: 800, timer: 1.5, alive: true, isBoss: true, size: 2.2 };
     enemies.push(boss);
-    // несколько аптечек и патронов по углам
     pickups.push({ x: 3.5, y: 3.5, kind: "medkit" });
     pickups.push({ x: w - 3.5, y: 3.5, kind: "medkit" });
     pickups.push({ x: 3.5, y: h - 3.5, kind: "medkit" });
@@ -622,19 +571,12 @@ function loadLevel(idx) {
           free.push({ x: x + 0.5, y: y + 0.5 });
     shuffle(free);
     const n = Math.min(6 + idx, Math.floor(free.length / 4));
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n; i++)
       enemies.push({ x: free[i].x, y: free[i].y, hp: 30, timer: 1.0, alive: true, size: 1.0 });
-    }
-    for (let i = n; i < Math.min(n + 5, free.length); i++) {
-      pickups.push({
-        x: free[i].x, y: free[i].y,
-        kind: i % 2 === 0 ? "medkit" : "ammo"
-      });
-    }
+    for (let i = n; i < Math.min(n + 5, free.length); i++)
+      pickups.push({ x: free[i].x, y: free[i].y, kind: i % 2 === 0 ? "medkit" : "ammo" });
   }
-
-  gameOver = false;
-  win = false;
+  gameOver = false; win = false;
 }
 
 function shuffle(a) {
@@ -663,8 +605,7 @@ function hasLineOfSight(x1, y1, x2, y2) {
   return true;
 }
 function tryMove(dx, dy) {
-  const nx = player.x + dx;
-  const ny = player.y + dy;
+  const nx = player.x + dx, ny = player.y + dy;
   if (!isWall(nx, player.y)) player.x = nx;
   if (!isWall(player.x, ny)) player.y = ny;
 }
@@ -675,40 +616,28 @@ function takeDamage(dmg, sx, sy) {
   rel = ((rel + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
   player.damageIndicators.push({ rel, t: DAMAGE_INDICATOR_LIFETIME });
 }
-
-// Волны приспешников на арене босса
 function spawnMinions() {
   const h = grid.length, w = grid[0].length;
   const positions = [
-    { x: 3.5, y: 3.5 },
-    { x: w - 3.5, y: 3.5 },
-    { x: 3.5, y: h - 3.5 },
-    { x: w - 3.5, y: h - 3.5 },
-    { x: w / 2, y: 3.5 },
-    { x: w / 2, y: h - 3.5 },
+    { x: 3.5, y: 3.5 }, { x: w - 3.5, y: 3.5 },
+    { x: 3.5, y: h - 3.5 }, { x: w - 3.5, y: h - 3.5 },
+    { x: w / 2, y: 3.5 }, { x: w / 2, y: h - 3.5 },
   ];
   const count = Math.min(2 + bossWaveNum, 6);
   const shuffled = positions.slice().sort(() => Math.random() - 0.5);
   for (let i = 0; i < count; i++) {
     const p = shuffled[i % shuffled.length];
-    enemies.push({
-      x: p.x, y: p.y, hp: 30, timer: 1.2, alive: true, size: 1.0,
-      minion: true
-    });
+    enemies.push({ x: p.x, y: p.y, hp: 30, timer: 1.2, alive: true, size: 1.0, minion: true });
   }
 }
-
 function updateEnemies(dt) {
   for (const e of enemies) {
     if (!e.alive) continue;
-    const dx = player.x - e.x;
-    const dy = player.y - e.y;
+    const dx = player.x - e.x, dy = player.y - e.y;
     const dist = Math.hypot(dx, dy);
     if (dist < 0.01) continue;
     const visible = hasLineOfSight(e.x, e.y, player.x, player.y);
-
     if (e.isBoss) {
-      // Босс медленно двигается и стреляет больно и часто
       if (dist > 1.5 && dist < 12) {
         const sp = 0.8;
         const nx = e.x + (dx / dist) * sp * dt;
@@ -719,10 +648,8 @@ function updateEnemies(dt) {
       e.timer -= dt;
       if (dist < 14 && e.timer <= 0) {
         e.timer = 0.7;
-        // тройной залп
-        for (let k = 0; k < 3; k++) {
+        for (let k = 0; k < 3; k++)
           if (Math.random() < 0.7) takeDamage(8 + Math.floor(Math.random() * 6), e.x, e.y);
-        }
       }
     } else {
       if (visible && dist > 1.0 && dist < 8) {
@@ -738,24 +665,18 @@ function updateEnemies(dt) {
       }
     }
   }
-
-  // Волны приспешников
   if (isBossLevel && boss && boss.alive) {
     bossWaveTimer -= dt;
     const aliveMinions = enemies.filter(e => e.alive && e.minion).length;
     if (bossWaveTimer <= 0 && aliveMinions < 2) {
-      bossWaveNum += 1;
-      bossWaveTimer = 6;
-      spawnMinions();
+      bossWaveNum += 1; bossWaveTimer = 6; spawnMinions();
     }
   }
 }
-
 function updateDamageIndicators(dt) {
   for (const ind of player.damageIndicators) ind.t -= dt;
   player.damageIndicators = player.damageIndicators.filter(i => i.t > 0);
 }
-
 function shoot() {
   if (player.ammo <= 0) return;
   player.ammo -= 1;
@@ -773,9 +694,7 @@ function shoot() {
     ang = ((ang + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
     const hitRadius = e.isBoss ? 0.12 : 0.08;
     if (Math.abs(ang) < hitRadius + cone && dist < 12 && dist < bestD) {
-      if (hasLineOfSight(player.x, player.y, e.x, e.y)) {
-        best = e; bestD = dist;
-      }
+      if (hasLineOfSight(player.x, player.y, e.x, e.y)) { best = e; bestD = dist; }
     }
   }
   if (best) {
@@ -790,20 +709,17 @@ function shoot() {
 }
 
 // ============================================================
-// РЕНДЕР 3D
+// РЕНДЕР МИРА
 // ============================================================
 function renderWalls() {
   const gh = grid.length, gw = grid[0].length;
   const startAng = player.angle - HALF_FOV;
   const stepAng = FOV / (RAYS - 1);
-
   ctx.fillStyle = isBossLevel ? "#1a0a0a" : "#1e1e28";
   ctx.fillRect(0, 0, VW, VH / 2);
   ctx.fillStyle = isBossLevel ? "#2a1010" : "#3c3228";
   ctx.fillRect(0, VH / 2, VW, VH / 2);
-
   const colW = Math.ceil(VW / RAYS) + 1;
-
   for (let i = 0; i < RAYS; i++) {
     const ang = startAng + stepAng * i;
     const ca = Math.cos(ang), sa = Math.sin(ang);
@@ -814,47 +730,34 @@ function renderWalls() {
       if (tx < 0 || ty < 0 || tx >= gw || ty >= gh) break;
       const cell = grid[ty | 0][tx | 0];
       if (cell === 0) continue;
-
       const dist = depth * Math.cos(ang - player.angle);
       const d = Math.max(dist, 0.001);
       const colH = Math.min(VH / d, VH * 3);
       const y0 = (VH >> 1) - colH / 2;
-
       let tex;
       if (cell === 2) tex = TEX_EXIT;
       else if (isBossLevel) tex = TEX_BOSS_WALL;
       else tex = TEX_WALL;
-
-      const fx = tx - Math.floor(tx);
-      const fy = ty - Math.floor(ty);
+      const fx = tx - Math.floor(tx), fy = ty - Math.floor(ty);
       let texX;
-      if (Math.min(fx, 1 - fx) < Math.min(fy, 1 - fy)) {
+      if (Math.min(fx, 1 - fx) < Math.min(fy, 1 - fy))
         texX = ca < 0 ? (fx * 64) | 0 : ((1 - fx) * 64) | 0;
-      } else {
+      else
         texX = sa < 0 ? (fy * 64) | 0 : ((1 - fy) * 64) | 0;
-      }
       texX = clamp(texX, 0, 63);
-
       const shade = Math.max(0.25, 1 - d / MAX_DEPTH);
       drawTexturedColumn(i * (VW / RAYS), Math.max(0, y0), colW, colH, tex, texX, shade);
-      zbuffer[i] = d;
-      hit = true;
-      break;
+      zbuffer[i] = d; hit = true; break;
     }
     if (!hit) zbuffer[i] = MAX_DEPTH;
   }
 }
-
 function drawTexturedColumn(x, y, w, h, tex, texX, shade) {
-  let drawY = y;
-  let drawH = h;
-  let srcY0 = 0;
-  let srcY1 = tex.size;
+  let drawY = y, drawH = h, srcY0 = 0, srcY1 = tex.size;
   if (drawY < 0) {
     const cut = -drawY;
     srcY0 = (cut / h) * tex.size;
-    drawH -= cut;
-    drawY = 0;
+    drawH -= cut; drawY = 0;
   }
   if (drawY + drawH > VH) {
     const cut = drawY + drawH - VH;
@@ -869,7 +772,6 @@ function drawTexturedColumn(x, y, w, h, tex, texX, shade) {
     ctx.fillRect(x, drawY, w, drawH);
   }
 }
-
 const stripCache = new WeakMap();
 function getStrip(tex, texX) {
   let arr = stripCache.get(tex);
@@ -879,8 +781,7 @@ function getStrip(tex, texX) {
   const g = c.getContext("2d");
   const img = g.createImageData(1, tex.size);
   for (let y = 0; y < tex.size; y++) {
-    const si = (y * tex.size + texX) * 3;
-    const di = y * 4;
+    const si = (y * tex.size + texX) * 3, di = y * 4;
     img.data[di] = tex.data[si];
     img.data[di + 1] = tex.data[si + 1];
     img.data[di + 2] = tex.data[si + 2];
@@ -890,29 +791,21 @@ function getStrip(tex, texX) {
   arr[texX] = c;
   return c;
 }
-
 function renderSprites() {
   const list = [];
   for (const e of enemies) {
     if (!e.alive) continue;
-    const spr = e.isBoss ? SPR_BOSS : SPR_ENEMY;
-    list.push({ x: e.x, y: e.y, spr, size: e.size || 1.0 });
+    list.push({ x: e.x, y: e.y, spr: e.isBoss ? SPR_BOSS : SPR_ENEMY, size: e.size || 1.0 });
   }
-  for (const p of pickups) {
-    list.push({
-      x: p.x, y: p.y,
-      spr: p.kind === "medkit" ? SPR_MEDKIT : SPR_AMMO,
-      size: 1.0
-    });
-  }
+  for (const p of pickups)
+    list.push({ x: p.x, y: p.y, spr: p.kind === "medkit" ? SPR_MEDKIT : SPR_AMMO, size: 1.0 });
   list.sort((a, b) => {
     const da = Math.hypot(a.x - player.x, a.y - player.y);
     const db = Math.hypot(b.x - player.x, b.y - player.y);
     return db - da;
   });
   for (const s of list) {
-    const dx = s.x - player.x;
-    const dy = s.y - player.y;
+    const dx = s.x - player.x, dy = s.y - player.y;
     const dist = Math.hypot(dx, dy);
     if (dist < 0.3) continue;
     let ang = Math.atan2(dy, dx) - player.angle;
@@ -926,7 +819,6 @@ function renderSprites() {
     ctx.drawImage(s.spr, screenX - size / 2, y, size, size);
   }
 }
-
 function renderWeapon() {
   const spr = player.weapon === "pistol" ? SPR_PISTOL : SPR_SHOTGUN;
   const w = spr.width, h = spr.height;
@@ -944,7 +836,6 @@ function renderWeapon() {
   }
   ctx.drawImage(spr, cx - w / 2, cy - h / 2);
 }
-
 function renderCrosshair() {
   const cx = VW / 2, cy = VH / 2;
   const gap = aiming ? 6 : 10;
@@ -960,7 +851,6 @@ function renderCrosshair() {
   ctx.fillStyle = aiming ? "#00ff50" : "#e6e6e6";
   ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, 7); ctx.fill();
 }
-
 function renderDamageIndicators() {
   const cx = VW / 2, cy = VH / 2;
   for (const ind of player.damageIndicators) {
@@ -979,7 +869,6 @@ function renderDamageIndicators() {
     ctx.fill();
   }
 }
-
 function renderLowHpWarning() {
   if (player.hp > 30 || player.hp <= 0) return;
   const intensity = (30 - player.hp) / 30;
@@ -993,7 +882,6 @@ function renderLowHpWarning() {
   ctx.fillRect(0, 0, border, VH);
   ctx.fillRect(VW - border, 0, border, VH);
 }
-
 function renderMinimap() {
   const s = 6, ox = 10, oy = 10;
   const gh = grid.length, gw = grid[0].length;
@@ -1001,11 +889,8 @@ function renderMinimap() {
     for (let x = 0; x < gw; x++) {
       const c = grid[y][x];
       if (!c) continue;
-      if (isBossLevel) {
-        ctx.fillStyle = c === 2 ? "#50dc78" : "#7a2a2a";
-      } else {
-        ctx.fillStyle = c === 2 ? "#50dc78" : "#64647e";
-      }
+      if (isBossLevel) ctx.fillStyle = c === 2 ? "#50dc78" : "#7a2a2a";
+      else ctx.fillStyle = c === 2 ? "#50dc78" : "#64647e";
       ctx.fillRect(ox + x * s, oy + y * s, s - 1, s - 1);
     }
   }
@@ -1035,37 +920,26 @@ function renderMinimap() {
              oy + (player.y + Math.sin(player.angle) * 1.2) * s);
   ctx.stroke();
 }
-
 function renderBossBar() {
   if (!boss || !boss.alive) return;
   const barW = Math.min(700, VW - 100);
   const barH = 22;
-  const x = (VW - barW) / 2;
-  const y = 14;
-  // фон
+  const x = (VW - barW) / 2, y = 14;
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(x - 4, y - 4, barW + 8, barH + 8);
-  // рамка
-  ctx.strokeStyle = "#c83030";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#c83030"; ctx.lineWidth = 2;
   ctx.strokeRect(x - 4, y - 4, barW + 8, barH + 8);
-  // полоса
   const frac = Math.max(0, boss.hp / boss.maxHp);
-  ctx.fillStyle = "#3a0a0a";
-  ctx.fillRect(x, y, barW, barH);
-  ctx.fillStyle = "#dc2828";
-  ctx.fillRect(x, y, barW * frac, barH);
-  // блик
+  ctx.fillStyle = "#3a0a0a"; ctx.fillRect(x, y, barW, barH);
+  ctx.fillStyle = "#dc2828"; ctx.fillRect(x, y, barW * frac, barH);
   ctx.fillStyle = "rgba(255,255,255,0.15)";
   ctx.fillRect(x, y, barW * frac, 5);
-  // текст
   ctx.font = "bold 16px Consolas, monospace";
   ctx.fillStyle = "#fff";
   const txt = "БОСС: ПОВЕЛИТЕЛЬ БЕЗДНЫ  —  " + Math.max(0, boss.hp | 0) + " / " + boss.maxHp;
   const tw = ctx.measureText(txt).width;
   ctx.fillText(txt, VW / 2 - tw / 2, y + barH - 6);
 }
-
 function renderHud() {
   ctx.fillStyle = "#1e1e1e"; ctx.fillRect(20, VH - 60, 220, 30);
   const hpW = Math.max(0, Math.floor(220 * player.hp / 100));
@@ -1113,22 +987,18 @@ for (let i = 0; i < 180; i++) {
     phase: Math.random() * 6.28
   });
 }
-
 function drawMenuBg(dt) {
   const grad = ctx.createRadialGradient(VW / 2, VH / 2, 0, VW / 2, VH / 2, Math.max(VW, VH) / 2);
-  grad.addColorStop(0, "#231f3c");
-  grad.addColorStop(1, "#050508");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, VW, VH);
+  grad.addColorStop(0, "#231f3c"); grad.addColorStop(1, "#050508");
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
   for (const s of stars) {
     s.y += s.speed * dt;
     if (s.y > VH) { s.y = -2; s.x = Math.random() * VW; }
     const flick = 0.8 + 0.2 * Math.sin(menuTime * 3 + s.phase);
     ctx.globalAlpha = (s.alpha / 255) * flick;
     ctx.fillStyle = s.color;
-    if (s.r === 1) {
-      ctx.fillRect(s.x, s.y, 1, 1);
-    } else {
+    if (s.r === 1) ctx.fillRect(s.x, s.y, 1, 1);
+    else {
       ctx.fillRect(s.x - 1, s.y - 1, 3, 3);
       ctx.fillRect(s.x - 3, s.y, 7, 1);
       ctx.fillRect(s.x, s.y - 3, 1, 7);
@@ -1136,7 +1006,6 @@ function drawMenuBg(dt) {
   }
   ctx.globalAlpha = 1;
 }
-
 function drawTitle() {
   const text = "PYTHON DOOM";
   const cx = VW / 2;
@@ -1150,11 +1019,10 @@ function drawTitle() {
   ctx.fillStyle = "rgba(255,180,60," + (0.35 + 0.65 * pulse) + ")";
   ctx.fillText(text, cx - w / 2, 130);
 }
-
 let menuButtons = [];
 function rebuildMenuButtons() {
   menuButtons = [];
-  const bw = 320, bh = 56, gap = 14;
+  const bw = 320, bh = 52, gap = 12;
   const cx = VW / 2 - bw / 2;
   const startY = 200;
   const defs = [
@@ -1167,18 +1035,13 @@ function rebuildMenuButtons() {
   ];
   defs.forEach((d, i) => {
     menuButtons.push({
-      text: d.text,
-      x: cx, y: startY + i * (bh + gap),
-      w: bw, h: bh,
-      action: d.action,
-      danger: !!d.danger,
-      appear: 0, hover: 0,
-      delay: 0.15 + i * 0.08
+      text: d.text, x: cx, y: startY + i * (bh + gap),
+      w: bw, h: bh, action: d.action, danger: !!d.danger,
+      appear: 0, hover: 0, delay: 0.15 + i * 0.08
     });
   });
 }
 rebuildMenuButtons();
-
 function updateMenuButtons(dt) {
   for (const b of menuButtons) {
     if (menuTime >= b.delay && b.appear < 1) b.appear = Math.min(1, b.appear + dt * 4);
@@ -1186,7 +1049,6 @@ function updateMenuButtons(dt) {
     b.hover += ((isHover ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
   }
 }
-
 function drawMenuButtons() {
   for (const b of menuButtons) {
     if (b.appear <= 0) continue;
@@ -1220,13 +1082,12 @@ function drawMenuButtons() {
       roundRect(x + 6, barY, 2 + 4 * b.hover, barH, 2); ctx.fill();
     }
     ctx.fillStyle = fg;
-    ctx.font = "bold 22px Consolas, monospace";
+    ctx.font = "bold 20px Consolas, monospace";
     const tw = ctx.measureText(b.text).width;
-    ctx.fillText(b.text, x + b.w / 2 - tw / 2, y + b.h / 2 + 8);
+    ctx.fillText(b.text, x + b.w / 2 - tw / 2, y + b.h / 2 + 7);
     ctx.globalAlpha = 1;
   }
 }
-
 function roundRect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -1236,7 +1097,6 @@ function roundRect(x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
-
 function pointInRect(px, py, b) {
   const appearOffset = (1 - b.appear) * 30;
   const lift = b.hover * 4;
@@ -1244,24 +1104,21 @@ function pointInRect(px, py, b) {
   return px >= x && px <= x + b.w && py >= y && py <= y + b.h;
 }
 
-// ============ ЭКРАН ВЫБОРА УРОВНЯ ============
+// ============ ВЫБОР УРОВНЯ ============
 let levelButtons = [];
 let levelScroll = 0;
 let levelScrollMax = 0;
 let levelDragActive = false;
 let levelDragStart = 0;
 let levelDragScrollStart = 0;
-
 function rebuildLevelButtons() {
   levelButtons = [];
-  const cols = 5;
-  const bw = 150, bh = 80, gapX = 15, gapY = 15;
+  const cols = 5, bw = 150, bh = 80, gapX = 15, gapY = 15;
   const gridW = cols * bw + (cols - 1) * gapX;
   const startX = VW / 2 - gridW / 2;
-  const topMargin = 130;
-  const bottomMargin = 90;
+  const topMargin = 130, bottomMargin = 90;
   const viewH = VH - topMargin - bottomMargin;
-  const totalSlots = LEVELS_RAW.length + 1; // + арена босса
+  const totalSlots = LEVELS_RAW.length + 1;
   const rows = Math.ceil(totalSlots / cols);
   const totalH = rows * bh + (rows - 1) * gapY;
   levelScrollMax = Math.max(0, totalH - viewH);
@@ -1273,13 +1130,11 @@ function rebuildLevelButtons() {
       x: startX + col * (bw + gapX),
       y: topMargin + row * (bh + gapY),
       w: bw, h: bh,
-      enabled: i < unlocked,
-      hover: 0,
+      enabled: i < unlocked, hover: 0,
       isBoss: i === LEVELS_RAW.length
     });
   }
 }
-
 function drawLevelsScreen(dt) {
   drawMenuBg(dt);
   ctx.fillStyle = "#dcc850";
@@ -1287,15 +1142,10 @@ function drawLevelsScreen(dt) {
   const t = "ВЫБОР УРОВНЯ";
   const tw = ctx.measureText(t).width;
   ctx.fillText(t, VW / 2 - tw / 2, 80);
-
-  const topMargin = 130;
-  const bottomMargin = 90;
+  const topMargin = 130, bottomMargin = 90;
   const viewH = VH - topMargin - bottomMargin;
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, topMargin - 5, VW, viewH + 10);
-  ctx.clip();
-
+  ctx.beginPath(); ctx.rect(0, topMargin - 5, VW, viewH + 10); ctx.clip();
   for (const b of levelButtons) {
     const vy = b.y - levelScroll;
     if (vy + b.h < topMargin - 10 || vy > VH - bottomMargin + 10) continue;
@@ -1316,22 +1166,16 @@ function drawLevelsScreen(dt) {
     roundRect(b.x, vy, b.w, b.h, 8); ctx.stroke();
     ctx.fillStyle = fg;
     ctx.font = "bold 20px Consolas, monospace";
-    let title;
-    if (b.isBoss) title = "★ БОСС ★";
-    else title = "УР. " + (b.idx + 1);
+    let title = b.isBoss ? "★ БОСС ★" : "УР. " + (b.idx + 1);
     const tW = ctx.measureText(title).width;
     ctx.fillText(title, b.x + b.w / 2 - tW / 2, vy + 38);
     ctx.font = "12px Consolas, monospace";
     ctx.fillStyle = b.enabled ? (b.isBoss ? "#ff9090" : "#9c9cb4") : "#5a5a64";
-    let subtitle;
-    if (!b.enabled) subtitle = "заблокировано";
-    else if (b.isBoss) subtitle = "финальный босс";
-    else subtitle = LEVEL_NAMES[b.idx];
+    let subtitle = !b.enabled ? "заблокировано" : (b.isBoss ? "финальный босс" : LEVEL_NAMES[b.idx]);
     const sW = ctx.measureText(subtitle).width;
     ctx.fillText(subtitle, b.x + b.w / 2 - sW / 2, vy + 62);
   }
   ctx.restore();
-
   if (levelScrollMax > 0) {
     const cols = 5, totalSlots = LEVELS_RAW.length + 1;
     const rows = Math.ceil(totalSlots / cols);
@@ -1350,7 +1194,6 @@ function drawLevelsScreen(dt) {
   }
   drawBackButton();
 }
-
 let backHover = 0;
 function drawBackButton() {
   const x = 30, y = VH - 70, w = 180, h = 45;
@@ -1366,6 +1209,12 @@ function drawBackButton() {
   ctx.fillText(t, x + w / 2 - ctx.measureText(t).width / 2, y + h / 2 + 7);
 }
 
+// ============ НАСТРОЙКИ ============
+let sliderHover = false;
+let sliderDrag = false;
+let testBtnHover = 0;
+let settingsVolume = masterVolume;
+
 function drawSettingsScreen(dt) {
   drawMenuBg(dt);
   ctx.fillStyle = "#dcc850";
@@ -1373,13 +1222,65 @@ function drawSettingsScreen(dt) {
   const t = "НАСТРОЙКИ";
   const tw = ctx.measureText(t).width;
   ctx.fillText(t, VW / 2 - tw / 2, 90);
-  ctx.fillStyle = "#c8c8d2";
-  ctx.font = "20px Consolas, monospace";
-  const m1 = "Здесь появятся настройки (звук, чувствительность, сложность).";
-  ctx.fillText(m1, VW / 2 - ctx.measureText(m1).width / 2, VH / 2 - 20);
+
+  // Ползунок громкости
+  const label = "Громкость звука";
+  ctx.fillStyle = "#dcdcec";
+  ctx.font = "22px Consolas, monospace";
+  const lw = ctx.measureText(label).width;
+  ctx.fillText(label, VW / 2 - lw / 2, 200);
+
+  const sliderW = 500, sliderH = 20;
+  const sx = VW / 2 - sliderW / 2, sy = 240;
+  // подложка
+  ctx.fillStyle = "#1e1e28";
+  roundRect(sx, sy, sliderW, sliderH, 10); ctx.fill();
+  // заполненная часть
+  const filled = sliderW * settingsVolume;
+  const grad = ctx.createLinearGradient(sx, 0, sx + sliderW, 0);
+  grad.addColorStop(0, "#3caaff");
+  grad.addColorStop(1, "#50dc78");
+  ctx.fillStyle = grad;
+  roundRect(sx, sy, filled, sliderH, 10); ctx.fill();
+  // рамка
+  ctx.strokeStyle = sliderHover || sliderDrag ? "#7eaaff" : "#506478";
+  ctx.lineWidth = 2;
+  roundRect(sx, sy, sliderW, sliderH, 10); ctx.stroke();
+  // ползунок
+  const knobX = sx + sliderW * settingsVolume;
+  const knobY = sy + sliderH / 2;
+  ctx.fillStyle = "#f0f0ff";
+  ctx.beginPath(); ctx.arc(knobX, knobY, 14, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#3c4660"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(knobX, knobY, 14, 0, 7); ctx.stroke();
+  ctx.fillStyle = "#3c4660";
+  ctx.beginPath(); ctx.arc(knobX, knobY, 5, 0, 7); ctx.fill();
+  // значение
   ctx.fillStyle = "#b4b4c8";
-  const m2 = "Добавим позже :)";
-  ctx.fillText(m2, VW / 2 - ctx.measureText(m2).width / 2, VH / 2 + 20);
+  ctx.font = "18px Consolas, monospace";
+  const pct = Math.round(settingsVolume * 100) + "%";
+  ctx.fillText(pct, VW / 2 - ctx.measureText(pct).width / 2, sy + sliderH + 30);
+
+  // Кнопка "Проверить звук"
+  const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
+  const hovered = mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh;
+  testBtnHover += ((hovered ? 1 : 0) - testBtnHover) * Math.min(1, dt * 12);
+  const t1 = testBtnHover;
+  ctx.fillStyle = "rgb(" + Math.round(40 + t1 * 25) + "," + Math.round(50 + t1 * 30) + "," + Math.round(70 + t1 * 45) + ")";
+  roundRect(bx, by, bw, bh, 10); ctx.fill();
+  ctx.strokeStyle = "rgb(" + Math.round(90 + t1 * 60) + "," + Math.round(120 + t1 * 60) + "," + Math.round(180 + t1 * 60) + ")";
+  ctx.lineWidth = 2; roundRect(bx, by, bw, bh, 10); ctx.stroke();
+  ctx.fillStyle = "rgb(" + Math.round(220 + t1 * 35) + "," + Math.round(220 + t1 * 35) + ",255)";
+  ctx.font = "bold 20px Consolas, monospace";
+  const btnTxt = "🔊 ПРОВЕРИТЬ ЗВУК";
+  ctx.fillText(btnTxt, bx + bw / 2 - ctx.measureText(btnTxt).width / 2, by + bh / 2 + 7);
+
+  // подсказка
+  ctx.fillStyle = "#7c7c94";
+  ctx.font = "14px Consolas, monospace";
+  const hint = "Настройка сохраняется автоматически";
+  ctx.fillText(hint, VW / 2 - ctx.measureText(hint).width / 2, by + bh + 40);
+
   drawBackButton();
 }
 
@@ -1426,7 +1327,7 @@ function drawConfirmDialog(dt) {
   ctx.fillText(t, noX + bw / 2 - ctx.measureText(t).width / 2, by + bh / 2 + 7);
 }
 
-// ============ КАСТОМНЫЙ КУРСОР ============
+// ============ КУРСОР ============
 function drawCursor(now) {
   if (state === GAME_STATE.PLAYING) return;
   const x = mouseX, y = mouseY;
@@ -1466,6 +1367,7 @@ function drawCursor(now) {
 // ============================================================
 let mouseX = VW / 2, mouseY = VH / 2;
 const keys = {};
+const mouseButtons = { left: false };
 
 window.addEventListener("keydown", (e) => {
   keys[e.key.toLowerCase()] = true;
@@ -1501,30 +1403,66 @@ canvas.addEventListener("mousemove", (e) => {
   const rect = canvas.getBoundingClientRect();
   mouseX = (e.clientX - rect.left) / rect.width * VW;
   mouseY = (e.clientY - rect.top) / rect.height * VH;
+
+  if (state === GAME_STATE.SETTINGS) {
+    const sliderW = 500, sliderH = 20;
+    const sx = VW / 2 - sliderW / 2, sy = 240;
+    const onSlider = mouseY >= sy - 20 && mouseY <= sy + sliderH + 20 &&
+                     mouseX >= sx - 20 && mouseX <= sx + sliderW + 20;
+    sliderHover = onSlider;
+    if (sliderDrag) {
+      const t = (mouseX - sx) / sliderW;
+      settingsVolume = Math.max(0, Math.min(1, t));
+      masterVolume = settingsVolume;
+      saveVolume();
+    }
+  }
 });
 
 canvas.addEventListener("mousedown", (e) => {
   ensureAudio();
   if (state === GAME_STATE.PLAYING) {
-    if (e.button === 0 && !gameOver && !win) shoot();
+    if (e.button === 0 && !gameOver && !win) { shoot(); mouseButtons.left = true; }
     if (e.button === 2) { aiming = true; e.preventDefault(); }
-    if (document.pointerLockElement !== canvas && !isTouchDevice) {
-      canvas.requestPointerLock();
+    if (document.pointerLockElement !== canvas && !isTouchDevice) canvas.requestPointerLock();
+  } else if (state === GAME_STATE.SETTINGS) {
+    const sliderW = 500, sliderH = 20;
+    const sx = VW / 2 - sliderW / 2, sy = 240;
+    const onSlider = mouseY >= sy - 20 && mouseY <= sy + sliderH + 20 &&
+                     mouseX >= sx - 20 && mouseX <= sx + sliderW + 20;
+    if (onSlider) {
+      sliderDrag = true;
+      const t = (mouseX - sx) / sliderW;
+      settingsVolume = Math.max(0, Math.min(1, t));
+      masterVolume = settingsVolume;
+      saveVolume();
+    }
+    // тест звука
+    const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
+    if (mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh) {
+      ensureAudio();
+      playShot("shotgun");
     }
   }
 });
 canvas.addEventListener("mouseup", (e) => {
   if (e.button === 2) aiming = false;
+  if (e.button === 0) { mouseButtons.left = false; sliderDrag = false; }
 });
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
 canvas.addEventListener("click", (e) => {
   ensureAudio();
-  if (state !== GAME_STATE.PLAYING) {
+  if (state !== GAME_STATE.PLAYING && state !== GAME_STATE.SETTINGS) {
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) / rect.width * VW;
     const my = (e.clientY - rect.top) / rect.height * VH;
     handleMenuClick(mx, my);
+  } else if (state === GAME_STATE.SETTINGS) {
+    // назад
+    if (mouseX >= 30 && mouseX <= 210 && mouseY >= VH - 70 && mouseY <= VH - 25) {
+      state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
+    }
   } else if (document.pointerLockElement !== canvas && !isTouchDevice) {
     canvas.requestPointerLock();
   }
@@ -1551,11 +1489,34 @@ const JOY_X = 100, JOY_Y = 110;
 const FIRE_BTN = { x: 90, y: 110, r: 50 };
 const AIM_BTN  = { x: 210, y: 110, r: 40 };
 const SWAP_BTN = { x: 210, y: 210, r: 40 };
-
 function dist2(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; }
 
 function onTouchStart(e) {
   ensureAudio();
+  if (state === GAME_STATE.SETTINGS) {
+    const t = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (t.clientX - rect.left) / rect.width * VW;
+    const y = (t.clientY - rect.top) / rect.height * VH;
+    const sliderW = 500, sliderH = 20;
+    const sx = VW / 2 - sliderW / 2, sy = 240;
+    if (x >= sx - 20 && x <= sx + sliderW + 20 && y >= sy - 20 && y <= sy + sliderH + 20) {
+      sliderDrag = true;
+      const tt = (x - sx) / sliderW;
+      settingsVolume = Math.max(0, Math.min(1, tt));
+      masterVolume = settingsVolume;
+      saveVolume();
+    }
+    const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
+    if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+      ensureAudio(); playShot("shotgun");
+    }
+    if (x >= 30 && x <= 210 && y >= VH - 70 && y <= VH - 25) {
+      state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
+    }
+    e.preventDefault();
+    return;
+  }
   if (state !== GAME_STATE.PLAYING) {
     const t = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
@@ -1596,18 +1557,29 @@ function onTouchStart(e) {
   e.preventDefault();
 }
 function onTouchMove(e) {
+  if (state === GAME_STATE.SETTINGS && sliderDrag) {
+    const t = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (t.clientX - rect.left) / rect.width * VW;
+    const sliderW = 500;
+    const sx = VW / 2 - sliderW / 2;
+    const tt = (x - sx) / sliderW;
+    settingsVolume = Math.max(0, Math.min(1, tt));
+    masterVolume = settingsVolume;
+    saveVolume();
+    e.preventDefault();
+    return;
+  }
   if (state !== GAME_STATE.PLAYING) return;
   for (const t of e.changedTouches) {
     const rect = canvas.getBoundingClientRect();
     const x = (t.clientX - rect.left) / rect.width * VW;
     const y = (t.clientY - rect.top) / rect.height * VH;
     if (t.identifier === touch.moveTouchId) {
-      let dx = x - touch.moveStartX;
-      let dy = y - touch.moveStartY;
+      let dx = x - touch.moveStartX, dy = y - touch.moveStartY;
       const m = Math.hypot(dx, dy);
       if (m > JOY_R) { dx = dx / m * JOY_R; dy = dy / m * JOY_R; }
-      touch.moveDX = dx / JOY_R;
-      touch.moveDY = dy / JOY_R;
+      touch.moveDX = dx / JOY_R; touch.moveDY = dy / JOY_R;
     } else if (t.identifier === touch.lookTouchId) {
       const dx = x - touch.lookLastX;
       touch.lookLastX = x;
@@ -1617,6 +1589,7 @@ function onTouchMove(e) {
   e.preventDefault();
 }
 function onTouchEnd(e) {
+  sliderDrag = false;
   for (const t of e.changedTouches) {
     if (t.identifier === touch.moveTouchId) {
       touch.moveTouchId = null; touch.moveDX = 0; touch.moveDY = 0;
@@ -1663,10 +1636,6 @@ function handleMenuClick(mx, my) {
         return;
       }
     }
-  } else if (state === GAME_STATE.SETTINGS) {
-    if (mx >= 30 && mx <= 210 && my >= VH - 70 && my <= VH - 25) {
-      state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
-    }
   } else if (state === GAME_STATE.CONFIRM_RESET) {
     const w = 600, h = 260;
     const x = (VW - w) / 2, y = (VH - h) / 2;
@@ -1689,12 +1658,12 @@ function doMenuAction(action) {
   } else if (action === "levels") {
     state = GAME_STATE.LEVELS; levelScroll = 0; rebuildLevelButtons();
   } else if (action === "boss") {
-    // Босс открывается, если открыт последний уровень или сразу для теста
     levelIdx = LEVELS_RAW.length;
     loadLevel(levelIdx);
     state = GAME_STATE.PLAYING;
     if (!isTouchDevice) setTimeout(() => canvas.requestPointerLock(), 50);
   } else if (action === "settings") {
+    settingsVolume = masterVolume;
     state = GAME_STATE.SETTINGS;
   } else if (action === "reset") {
     state = GAME_STATE.CONFIRM_RESET;
@@ -1716,7 +1685,6 @@ function exitToMenu() {
 function advanceAfterWin() {
   if (levelIdx + 1 > LEVELS_RAW.length) { exitToMenu(); return; }
   if (levelIdx + 1 === LEVELS_RAW.length) {
-    // только что прошли последний обычный уровень — открываем босса
     const newUnlocked = LEVELS_RAW.length + 1;
     if (newUnlocked > unlocked) { unlocked = newUnlocked; saveProgress(unlocked); }
     exitToMenu();
@@ -1774,7 +1742,6 @@ function update(dt) {
       player.anim = Math.max(0, player.anim - dt * 4);
       player.flash = Math.max(0, player.flash - dt * 8);
       updateDamageIndicators(dt);
-      // Проверка победы
       if (isBossLevel) {
         if (boss && !boss.alive) win = true;
       } else {
@@ -1847,7 +1814,7 @@ function render(dt) {
     const hint = "Открыто: " + unlocked + " / " + (LEVELS_RAW.length + 1) + "   |   ESC — выход";
     ctx.fillText(hint, VW / 2 - ctx.measureText(hint).width / 2, VH - 35);
     ctx.fillStyle = "#64647c";
-    ctx.fillText("v3.0-js", VW - 80, VH - 15);
+    ctx.fillText("v3.1-js", VW - 80, VH - 15);
   } else if (state === GAME_STATE.LEVELS) {
     drawLevelsScreen(dt);
   } else if (state === GAME_STATE.SETTINGS) {
