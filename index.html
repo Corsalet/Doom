@@ -18,8 +18,9 @@
 "use strict";
 const RAYS=240,FOV=Math.PI/3,HALF_FOV=FOV/2,MAX_DEPTH=24,DAMAGE_INDICATOR_LIFETIME=1.2;
 const STORAGE_VOLUME="python_doom_volume_v1",STORAGE_MUSIC_VOLUME="python_doom_music_volume_v1";
-const STORAGE_SLOTS="python_doom_slots_v1",STORAGE_ACTIVE_SLOT="python_doom_active_slot_v1";
-const SLOT_COUNT=5;let VW=960,VH=600;
+const STORAGE_USERS="python_doom_users_v1",STORAGE_ACTIVE_USER="python_doom_active_user_v1";
+const STORAGE_SLOTS_OLD="python_doom_slots_v1";
+const MAX_USERS=10;let VW=960,VH=600;
 
 const TRACKS={
   default:{name:"Тёмный эмбиент",price:0,desc:"Простая синтезированная подложка",file:"",synth:{type:"ambient",base:55,tempo:0.5,wave:"sine"}},
@@ -30,6 +31,9 @@ const TRACKS={
   korza_telo:{name:"KORZA — Telo pokhudelo",price:170,desc:"Тёмный техно-бит",file:"https://www.dropbox.com/scl/fi/up6xapa2ehgslh3fum4va/korza_telo.mp3?rlkey=ohfhhy3jarcfugk8qgt9yzfth&st=9i8m6vkf&raw=1",synth:{type:"techno",base:100,tempo:1.4,wave:"square"}}
 };
 
+/* ============================================================
+   УРОВНИ (все как в v8.3 — без изменений)
+   ============================================================ */
 const PAGE1_RAW=[
 ["1111111111111111","1000000010000001","1011100010111001","1010000000010001","1010111110010001","1000100010000001","1110101010111101","1000101000100001","1011101111101101","1000001000001001","1011111011101001","1010000010000001","1010111010111101","1000100010000001","1011100010111002","1111111111111111"],
 ["11111111111111111111","10000000001000000001","10111111001011111001","10100001000010001001","10101101011010101001","10101000001000100001","10101111101011101101","10001000100010000001","11111010111010111101","10000010000010000001","10111110111110111001","10100000100000100001","10101110101110101101","10001000100000100001","10111011111011101101","10000010000000000001","10111110111111111001","10000000100000001001","10111110101111101002","11111111111111111111"],
@@ -142,6 +146,9 @@ const PAGE2_NAMES=["Врата ада","Кровавый зал","Кости п�
 
 const THEMES={menu:{default:{name:"Тёмный космос",price:0,desc:"Звёздное небо"},hell:{name:"Ад",price:100,desc:"Красный градиент с лавой"},matrix:{name:"Матрица",price:150,desc:"Зелёные символы"},aurora:{name:"Северное сияние",price:200,desc:"Сине-зелёные волны"},blood:{name:"Кровь",price:250,desc:"Тёмно-красные капли"},ice:{name:"Ледяная бездна",price:300,desc:"Снег и лёд"},desert:{name:"Пустыня",price:300,desc:"Песок и дрожащий горизонт"},cyber:{name:"Киберпанк",price:350,desc:"Неоновые полосы"},volcano:{name:"Вулкан",price:400,desc:"Огненные всполохи"},curse:{name:"Проклятие",price:500,desc:"Туман и черепа"}},cursor:{default:{name:"Красный крест",price:0,desc:"Классика"},green:{name:"Зелёный Doom",price:80,desc:"Зелёные линии"},gold:{name:"Золотой крест",price:120,desc:"Золото"},neon:{name:"Синий неон",price:150,desc:"Голубой пульс"},skull:{name:"Багровый череп",price:200,desc:"Мини-череп"},blood:{name:"Кровавый крест",price:250,desc:"С каплями"},ice:{name:"Ледяная звезда",price:250,desc:"Снежинка"},fire:{name:"Огненный шар",price:300,desc:"Пламя"},void:{name:"Пустотный глаз",price:400,desc:"Моргающий глаз"}}};
 
+/* ============================================================
+   CANVAS + СПРАЙТЫ (все как в v8.3)
+   ============================================================ */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d",{alpha:false});
 function resizeCanvas(){const w=Math.max(800,Math.min(window.innerWidth,1920));const h=Math.max(500,Math.min(window.innerHeight,1080));VW=w;VH=h;canvas.width=VW;canvas.height=VH;canvas.style.width=window.innerWidth+"px";canvas.style.height=window.innerHeight+"px";ctx.imageSmoothingEnabled=false;}
@@ -197,6 +204,9 @@ const SPR_AMMO=makeAmmoSprite();
 const SPR_PISTOL=makePistol();
 const SPR_SHOTGUN=makeShotgun();
 
+/* ============================================================
+   AUDIO (как в v8.3)
+   ============================================================ */
 let audioCtx=null,masterVolume=0.7,musicVolume=0.5;
 let musicSource=null,currentTrackLoopTimer=null,currentTrackKey=null;
 (function(){try{const v=parseFloat(localStorage.getItem(STORAGE_VOLUME));if(!isNaN(v))masterVolume=clamp(v,0,1);const mv=parseFloat(localStorage.getItem(STORAGE_MUSIC_VOLUME));if(!isNaN(mv))musicVolume=clamp(mv,0,1);}catch(e){}})();
@@ -213,25 +223,139 @@ function stopMusic(){if(currentTrackLoopTimer){clearInterval(currentTrackLoopTim
 function playTrackByKey(key,forceRestart){ensureAudio();if(!forceRestart&&currentTrackKey===key&&(musicSource||currentTrackLoopTimer))return;stopMusic();currentTrackKey=key;const t=TRACKS[key];if(!t)return;if(!t.file){startSynthTrack(key);return;}const audio=new Audio();audio.src=t.file;audio.loop=true;audio.volume=musicVolume*masterVolume;let failed=false;audio.onerror=()=>{if(!failed){failed=true;startSynthTrack(key);}};audio.play().then(()=>{musicSource=audio;}).catch(()=>{if(!failed){failed=true;startSynthTrack(key);}});}
 function updateMusicVolume(){if(musicSource)musicSource.volume=musicVolume*masterVolume;}
 
-function defaultSlot(name){return{name:name,unlocked:1,unlockedPage2:0,unlockedPage3:[1,0,0,0,0,0,0],bossDefeated:false,hellBossDefeated:false,runes:0,menuTheme:"default",cursorTheme:"default",ownedMenuThemes:["default"],ownedCursorThemes:["default"],musicMenu:"default",musicGame:"default",ownedTracks:["default"]};}
-function loadSlots(){try{const raw=localStorage.getItem(STORAGE_SLOTS);if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length===SLOT_COUNT){return d.map((s,i)=>{const def=defaultSlot("Игрок "+(i+1));const merged=Object.assign(def,s);if(!Array.isArray(merged.unlockedPage3)||merged.unlockedPage3.length!==7)merged.unlockedPage3=[1,0,0,0,0,0,0];if(merged.unlocked>52)merged.unlocked=52;if(merged.unlockedPage2>31)merged.unlockedPage2=31;return merged;});}}}catch(e){}const a=[];for(let i=0;i<SLOT_COUNT;i++)a.push(defaultSlot("Игрок "+(i+1)));return a;}
-function saveSlots(){try{localStorage.setItem(STORAGE_SLOTS,JSON.stringify(slots));}catch(e){}}
-function loadActiveSlot(){try{const v=parseInt(localStorage.getItem(STORAGE_ACTIVE_SLOT));if(!isNaN(v)&&v>=0&&v<SLOT_COUNT)return v;}catch(e){}return 0;}
-function saveActiveSlot(){try{localStorage.setItem(STORAGE_ACTIVE_SLOT,String(activeSlot));}catch(e){}}
-let slots=loadSlots();let activeSlot=loadActiveSlot();
-function getSlot(){return slots[activeSlot];}
+/* ============================================================
+   НОВОЕ: РЕГИСТРАЦИЯ / SHA-256 / КОД СОХРАНЕНИЯ / МИГРАЦИЯ
+   ============================================================ */
+async function sha256(text){
+  if(window.crypto&&crypto.subtle){
+    try{
+      const buf=new TextEncoder().encode(text);
+      const hash=await crypto.subtle.digest("SHA-256",buf);
+      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+    }catch(e){/* упасть в fallback */}
+  }
+  // fallback (file://) — djb2+fnv1a конкатенация, детерминированная 64-hex
+  let h1=5381,h2=2166136261;
+  for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);h1=((h1<<5)+h1+c)>>>0;h2=((h2^c)*16777619)>>>0;}
+  return (h1.toString(16).padStart(8,"0")+h2.toString(16).padStart(8,"0")).padEnd(64,"0").slice(0,64);
+}
+function defaultUser(nick){return{
+  nick:nick,passHash:"",
+  unlocked:1,unlockedPage2:0,unlockedPage3:[1,0,0,0,0,0,0],
+  bossDefeated:false,hellBossDefeated:false,runes:0,
+  menuTheme:"default",cursorTheme:"default",
+  ownedMenuThemes:["default"],ownedCursorThemes:["default"],
+  musicMenu:"default",musicGame:"default",ownedTracks:["default"],
+  createdAt:Date.now()
+};}
+function normalizeUser(u){
+  const m=Object.assign(defaultUser(u.nick||"Игрок"),u);
+  if(!Array.isArray(m.unlockedPage3)||m.unlockedPage3.length!==7)m.unlockedPage3=[1,0,0,0,0,0,0];
+  if(m.unlocked>52)m.unlocked=52;
+  if(m.unlockedPage2>31)m.unlockedPage2=31;
+  if(!Array.isArray(m.ownedMenuThemes)||m.ownedMenuThemes.length===0)m.ownedMenuThemes=["default"];
+  if(!Array.isArray(m.ownedCursorThemes)||m.ownedCursorThemes.length===0)m.ownedCursorThemes=["default"];
+  if(!Array.isArray(m.ownedTracks)||m.ownedTracks.length===0)m.ownedTracks=["default"];
+  return m;
+}
+function loadUsers(){
+  try{const raw=localStorage.getItem(STORAGE_USERS);
+    if(raw){const d=JSON.parse(raw);if(Array.isArray(d))return d.map(normalizeUser);}
+  }catch(e){}
+  // миграция старых слотов: python_doom_slots_v1 → users
+  try{
+    const rawOld=localStorage.getItem(STORAGE_SLOTS_OLD);
+    if(rawOld){
+      const old=JSON.parse(rawOld);
+      if(Array.isArray(old)&&old.length){
+        const migrated=old.map((s,i)=>{
+          const u=normalizeUser(s);
+          u.nick=(s&&s.name)?s.name:("Игрок "+(i+1));
+          u.passHash="";
+          return u;
+        });
+        try{localStorage.setItem(STORAGE_USERS,JSON.stringify(migrated));}catch(e){}
+        return migrated;
+      }
+    }
+  }catch(e){}
+  return [];
+}
+function saveUsers(){try{localStorage.setItem(STORAGE_USERS,JSON.stringify(users));}catch(e){}}
+function loadActiveUserNick(){try{return localStorage.getItem(STORAGE_ACTIVE_USER)||null;}catch(e){}return null;}
+function saveActiveUser(){try{if(activeUser)localStorage.setItem(STORAGE_ACTIVE_USER,activeUser.nick);else localStorage.removeItem(STORAGE_ACTIVE_USER);}catch(e){}}
+let users=loadUsers();
+let activeUser=null;
+function getSlot(){return activeUser;}
+function findUser(nick){return users.find(u=>u.nick.toLowerCase()===nick.toLowerCase());}
 
-const GAME_STATE={MENU:"menu",SLOTS:"slots",LEVELS:"levels",SETTINGS:"settings",PLAYING:"playing",CONFIRM_RESET:"confirm",SHOP:"shop",RENAME:"rename"};
-let state=GAME_STATE.MENU,currentPage=1,currentCircle=0;
+function checksum4(str){let h=5381;for(let i=0;i<str.length;i++){h=((h<<5)+h+str.charCodeAt(i))>>>0;}return h.toString(16).padStart(8,"0").slice(0,4).toUpperCase();}
+function makeSaveCode(){
+  if(!activeUser)return"";
+  const data={nick:activeUser.nick,u:activeUser.unlocked,p2:activeUser.unlockedPage2,p3:activeUser.unlockedPage3,
+    b:activeUser.bossDefeated?1:0,hb:activeUser.hellBossDefeated?1:0,r:activeUser.runes,
+    mt:activeUser.menuTheme,ct:activeUser.cursorTheme,omt:activeUser.ownedMenuThemes,oct:activeUser.ownedCursorThemes,
+    mm:activeUser.musicMenu,mg:activeUser.musicGame,ot:activeUser.ownedTracks};
+  const json=JSON.stringify(data);
+  const b64=btoa(unescape(encodeURIComponent(json)));
+  const clean=b64.replace(/[^A-Za-z0-9+/=]/g,"");
+  const cs=checksum4(json);
+  const groups=clean.match(/.{1,20}/g)||[];
+  return "DOOM-"+groups.join("-")+"-"+cs;
+}
+function parseSaveCode(code){
+  try{
+    let clean=(code||"").trim().toUpperCase();
+    if(!clean.startsWith("DOOM-"))return null;
+    clean=clean.slice(5);
+    const parts=clean.split("-").filter(p=>p.length>0);
+    if(parts.length<2)return null;
+    const cs=parts[parts.length-1];
+    const body=parts.slice(0,-1).join("");
+    let b64=body;while(b64.length%4!==0)b64+="=";
+    const json=decodeURIComponent(escape(atob(b64)));
+    if(checksum4(json)!==cs)return null;
+    const data=JSON.parse(json);
+    if(!data||typeof data!=="object"||!data.nick)return null;
+    return data;
+  }catch(e){return null;}
+}
+function applySaveCode(data){
+  if(findUser(data.nick))return {ok:false,err:"Ник «"+data.nick+"» уже занят на этом устройстве"};
+  const profile=normalizeUser({
+    nick:data.nick,passHash:"",
+    unlocked:data.u||1,unlockedPage2:data.p2||0,
+    unlockedPage3:Array.isArray(data.p3)&&data.p3.length===7?data.p3:[1,0,0,0,0,0,0],
+    bossDefeated:!!data.b,hellBossDefeated:!!data.hb,runes:data.r||0,
+    menuTheme:data.mt||"default",cursorTheme:data.ct||"default",
+    ownedMenuThemes:Array.isArray(data.omt)?data.omt:["default"],
+    ownedCursorThemes:Array.isArray(data.oct)?data.oct:["default"],
+    musicMenu:data.mm||"default",musicGame:data.mg||"default",
+    ownedTracks:Array.isArray(data.ot)?data.ot:["default"]
+  });
+  users.push(profile);saveUsers();
+  return {ok:true,profile};
+}
+
+/* ============================================================
+   СОСТОЯНИЯ (добавлены AUTH/USERS/SAVE_CODE, убран RENAME/SLOTS)
+   ============================================================ */
+const GAME_STATE={AUTH:"auth",USERS:"users",SAVE_CODE:"save_code",MENU:"menu",LEVELS:"levels",SETTINGS:"settings",PLAYING:"playing",CONFIRM_RESET:"confirm",SHOP:"shop"};
+let state=GAME_STATE.AUTH,currentPage=1,currentCircle=0;
+let authMode="login",authNick="",authPass="",authCode="",authFocus="nick",authError="",authBusy=false;
+let saveCodeText="",saveCodeMsg="",saveCodeCopied=0;
 let player=null,grid=null,enemies=[],pickups=[],exitPos=null,zbuffer=new Float32Array(RAYS);
 let levelIdx=0,isBossLevel=false,isHellBossLevel=false,isPage2=false,isPage3=false,isCircleBoss=false,boss=null,bossWaveTimer=0,bossWaveNum=0;
 let gameOver=false,win=false,menuTime=0,lastTime=0,aiming=false,mouseDX=0;
-let renameBuffer="",renameSlotIdx=0;
+let mouseX=0,mouseY=0;const keys={};
 const touch={moveTouchId:null,moveStartX:0,moveStartY:0,moveDX:0,moveDY:0,lookTouchId:null,lookLastX:0,fireHeld:false};
 let isTouchDevice=("ontouchstart"in window)||navigator.maxTouchPoints>0;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}}
 function circleStats(c){return{enemyHp:150+c*30,enemyDmgMin:35+c*5,enemyDmgMax:45+c*5,bossHp:500+c*100,bossDmgMin:15+c*3,bossDmgMax:22+c*3,reward:100+c*25,bossReward:600+c*150};}
 
+/* ============================================================
+   УРОВНИ / ЛОГИКА ИГРЫ (как в v8.3, только saveSlots → saveUsers)
+   ============================================================ */
 function loadLevel(idx,page,circle){
   isBossLevel=false;isHellBossLevel=false;isCircleBoss=false;isPage2=false;isPage3=false;
   let raw;
@@ -267,7 +391,7 @@ function loadLevel(idx,page,circle){
     const items=page>=2?8:5;for(let i=n;i<Math.min(n+items,free.length);i++)pickups.push({x:free[i].x,y:free[i].y,kind:i%2===0?"medkit":"ammo"});
   }
   gameOver=false;win=false;
-  const s=getSlot();playTrackByKey(s.musicGame||"default",false);
+  const s=getSlot();if(s)playTrackByKey(s.musicGame||"default",false);
 }
 function isWall(x,y){if(x<0||y<0||y>=grid.length||x>=grid[0].length)return true;return grid[y|0][x|0]!==0;}
 function hasLineOfSight(x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1;const d=Math.hypot(dx,dy);if(d<0.001)return true;const s=Math.ceil(d/0.05);for(let i=1;i<s;i++){const t=i/s;if(isWall(x1+dx*t,y1+dy*t))return false;}return true;}
@@ -285,7 +409,6 @@ function updateEnemies(dt){
         if(!isWall(e.x,nx))e.x=nx;
       }
       e.timer-=dt;
-      // Боссы стреляют ТОЛЬКО при прямой видимости (vis) и реже
       if(vis&&d<(isCirc?18:isHell?16:14)&&e.timer<=0){
         e.timer=isCirc?1.1:isHell?0.9:1.2;
         const sh=isCirc?3:isHell?3:2;
@@ -303,6 +426,7 @@ function updateEnemies(dt){
 function updateDamageIndicators(dt){for(const i of player.damageIndicators)i.t-=dt;player.damageIndicators=player.damageIndicators.filter(i=>i.t>0);}
 function shoot(){if(player.ammo<=0)return;player.ammo-=1;player.anim=1;player.flash=1;playShot(player.weapon);const cone=aiming?0.04:0.08,dm=aiming?1.5:1;let best=null,bd=1e9;for(const e of enemies){if(!e.alive)continue;const dx=e.x-player.x,dy=e.y-player.y;const d=Math.hypot(dx,dy);let a=Math.atan2(dy,dx)-player.angle;a=((a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;const hr=(e.isBoss||e.isHellBoss||e.isCircleBoss)?0.12:(e.isDemon||e.isHellDemon)?0.10:0.08;if(Math.abs(a)<hr+cone&&d<12&&d<bd){if(hasLineOfSight(player.x,player.y,e.x,e.y)){best=e;bd=d;}}}if(best){const base=player.weapon==="pistol"?25:60;best.hp-=base*dm;if(best.hp<=0){best.alive=false;player.score+=best.isCircleBoss?8000:best.isHellBoss?10000:best.isBoss?5000:best.isHellDemon?400:best.isDemon?250:100;playHit();}}}
 
+/* РЕНДЕР МИРА (без изменений) */
 function renderWalls(){const gh=grid.length,gw=grid[0].length;const sa=player.angle-HALF_FOV,step=FOV/(RAYS-1);let cc="#1e1e28",fc="#3c3228";if(isBossLevel){cc="#1a0a0a";fc="#2a1010";}else if(isHellBossLevel||isCircleBoss){cc="#200000";fc="#400000";}else if(isPage3){const col=HELL_CIRCLE_COLORS[currentCircle];cc="rgb("+col.ceil.join(",")+")";fc="rgb("+col.floor.join(",")+")";}else if(isPage2){cc="#160a1a";fc="#2a1030";}ctx.fillStyle=cc;ctx.fillRect(0,0,VW,VH/2);ctx.fillStyle=fc;ctx.fillRect(0,VH/2,VW,VH/2);const colW=Math.ceil(VW/RAYS)+1;
   for(let i=0;i<RAYS;i++){const ang=sa+step*i;const ca=Math.cos(ang),sana=Math.sin(ang);let hit=false;for(let d=0.05;d<MAX_DEPTH;d+=0.02){const tx=player.x+ca*d,ty=player.y+sana*d;if(tx<0||ty<0||tx>=gw||ty>=gh)break;const cell=grid[ty|0][tx|0];if(cell===0)continue;const dd=d*Math.cos(ang-player.angle);const dep=Math.max(dd,0.001);const colH=Math.min(VH/dep,VH*3);const y0=(VH>>1)-colH/2;let tex;if(cell===2)tex=TEX_EXIT;else if(isPage3)tex=TEX_CIRCLE[currentCircle];else if(isHellBossLevel||isCircleBoss)tex=TEX_HELL_WALL;else if(isBossLevel)tex=TEX_BOSS_WALL;else if(isPage2)tex=TEX_DEMON_WALL;else tex=TEX_WALL;const fx=tx-Math.floor(tx),fy=ty-Math.floor(ty);let txX;if(Math.min(fx,1-fx)<Math.min(fy,1-fy))txX=ca<0?(fx*64)|0:((1-fx)*64)|0;else txX=sana<0?(fy*64)|0:((1-fy)*64)|0;txX=clamp(txX,0,63);const shade=Math.max(0.25,1-dep/MAX_DEPTH);drawTexturedColumn(i*(VW/RAYS),Math.max(0,y0),colW,colH,tex,txX,shade);zbuffer[i]=dep;hit=true;break;}if(!hit)zbuffer[i]=MAX_DEPTH;}}
 function drawTexturedColumn(x,y,w,h,tex,txX,shade){let dY=y,dH=h,sY0=0,sY1=tex.size;if(dY<0){const cut=-dY;sY0=(cut/h)*tex.size;dH-=cut;dY=0;}if(dY+dH>VH){const cut=dY+dH-VH;sY1=tex.size-(cut/h)*tex.size;dH-=cut;}if(dH<=0)return;const strip=getStrip(tex,txX);ctx.drawImage(strip,0,sY0,1,Math.max(1,sY1-sY0),x,dY,w,dH);if(shade<1){ctx.fillStyle="rgba(0,0,0,"+(1-shade)+")";ctx.fillRect(x,dY,w,dH);}}
@@ -313,11 +437,12 @@ function renderWeapon(){const spr=player.weapon==="pistol"?SPR_PISTOL:SPR_SHOTGU
 function renderCrosshair(){const cx=VW/2,cy=VH/2;const gap=aiming?6:10;const len=aiming?10:8;ctx.strokeStyle=aiming?"#00ff50":"#e6e6e6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-gap-len,cy);ctx.lineTo(cx-gap,cy);ctx.moveTo(cx+gap,cy);ctx.lineTo(cx+gap+len,cy);ctx.moveTo(cx,cy-gap-len);ctx.lineTo(cx,cy-gap);ctx.moveTo(cx,cy+gap);ctx.lineTo(cx,cy+gap+len);ctx.stroke();ctx.fillStyle=aiming?"#00ff50":"#e6e6e6";ctx.beginPath();ctx.arc(cx,cy,1.5,0,7);ctx.fill();}
 function renderDamageIndicators(){const cx=VW/2,cy=VH/2;for(const ind of player.damageIndicators){const alpha=Math.min(1,ind.t/DAMAGE_INDICATOR_LIFETIME)*0.8;const rIn=Math.min(VW,VH)*0.28,rOut=Math.min(VW,VH)*0.60;const sp=0.45;const au=-Math.PI/2+ind.rel;ctx.beginPath();ctx.moveTo(cx+rIn*Math.cos(au-sp),cy+rIn*Math.sin(au-sp));ctx.lineTo(cx+rOut*Math.cos(au-sp/2),cy+rOut*Math.sin(au-sp/2));ctx.lineTo(cx+rOut*Math.cos(au+sp/2),cy+rOut*Math.sin(au+sp/2));ctx.lineTo(cx+rIn*Math.cos(au+sp),cy+rIn*Math.sin(au+sp));ctx.closePath();ctx.fillStyle="rgba(255,30,30,"+alpha+")";ctx.fill();}}
 function renderLowHpWarning(){if(player.hp>30||player.hp<=0)return;const inten=(30-player.hp)/30;const pulse=0.5+0.5*Math.sin(menuTime*6);const alpha=0.35*inten*pulse;if(alpha<=0.01)return;const b=80;ctx.fillStyle="rgba(200,0,0,"+alpha+")";ctx.fillRect(0,0,VW,b);ctx.fillRect(0,VH-b,VW,b);ctx.fillRect(0,0,b,VH);ctx.fillRect(VW-b,0,b,VH);}
-function renderMinimap(){const s=6,ox=10,oy=10;const gh=grid.length,gw=grid[0].length;for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const c=grid[y][x];if(!c)continue;if(isHellBossLevel||isCircleBoss||isPage3)ctx.fillStyle=c===2?"#50dc78":"#aa4020";else if(isBossLevel)ctx.fillStyle=c===2?"#50dc78":"#7a2a2a";else if(isPage2)ctx.fillStyle=c===2?"#50dc78":"#5a3a6a";else ctx.fillStyle=c===2?"#50dc78":"#64647e";ctx.fillRect(ox+x*s,oy+y*s,s-1,s-1);}for(const e of enemies){if(!e.alive)continue;if(e.isHellBoss||e.isBoss||e.isCircleBoss){ctx.fillStyle=e.isCircleBoss?"#ff8000":e.isHellBoss?"#ff4020":"#ffcc00";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,7,0,7);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=1;ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,9,0,7);ctx.stroke();}else if(e.isHellDemon){ctx.fillStyle="#ff2000";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,4,0,7);ctx.fill();}else if(e.isDemon){ctx.fillStyle="#c050ff";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,4,0,7);ctx.fill();}else{ctx.fillStyle="#dc2828";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,3,0,7);ctx.fill();}}for(const p of pickups){ctx.fillStyle=p.kind==="medkit"?"#ffffff":"#dcc83c";ctx.beginPath();ctx.arc(ox+p.x*s,oy+p.y*s,2,0,7);ctx.fill();}ctx.fillStyle="#3cb4ff";ctx.beginPath();ctx.arc(ox+player.x*s,oy+player.y*s,4,0,7);ctx.fill();ctx.strokeStyle="#3cb4ff";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ox+player.x*s,oy+player.y*s);ctx.lineTo(ox+(player.x+Math.cos(player.angle)*1.2)*s,oy+(player.y+Math.sin(player.angle)*1.2)*s);ctx.stroke();}
-function renderBossBar(){if(!boss||!boss.alive)return;const barW=Math.min(700,VW-100),barH=22;const x=(VW-barW)/2,y=14;ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(x-4,y-4,barW+8,barH+8);const bc=boss.isCircleBoss?"#ff8020":boss.isHellBoss?"#ff4020":"#c83030";ctx.strokeStyle=bc;ctx.lineWidth=2;ctx.strokeRect(x-4,y-4,barW+8,barH+8);const fr=Math.max(0,boss.hp/boss.maxHp);ctx.fillStyle="#3a0a0a";ctx.fillRect(x,y,barW,barH);ctx.fillStyle=bc;ctx.fillRect(x,y,barW*fr,barH);ctx.fillStyle="rgba(255,255,255,0.15)";ctx.fillRect(x,y,barW*fr,5);ctx.font="bold 16px Consolas, monospace";ctx.fillStyle="#fff";const nm=boss.isCircleBoss?HELL_CIRCLE_BOSS_NAMES[boss.circle]:boss.isHellBoss?"ВЛАДЫКА ПРЕИСПОДНЕЙ":"ПОВЕЛИТЕЛЬ БЕЗДНЫ";const txt="БОСС: "+nm+"  —  "+Math.max(0,boss.hp|0)+" / "+boss.maxHp;const tw=ctx.measureText(txt).width;ctx.fillText(txt,VW/2-tw/2,y+barH-6);}
+function renderMinimap(){const s=6,ox=10,oy=10;const gh=grid.length,gw=grid[0].length;for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const c=grid[y][x];if(!c)continue;if(isHellBossLevel||isCircleBoss||isPage3)ctx.fillStyle=c===2?"#50dc78":"#aa4020";else if(isBossLevel)ctx.fillStyle=c===2?"#50dc78":"#7a2a2a";else if(isPage2)ctx.fillStyle=c===2?"#50dc78":"#5a3a6a";else ctx.fillStyle=c===2?"#50dc78":"#64647e";ctx.fillRect(ox+x*s,oy+y*s,s-1,s-1);}for(const e of enemies){if(!e.alive)continue;if(e.isHellBoss||e.isBoss||e.isCircleBoss){ctx.fillStyle=e.isCircleBoss?"#ff8000":e.isHellBoss?"#ff4020":"#ffcc00";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,7,0,7);ctx.fill();}else if(e.isHellDemon){ctx.fillStyle="#ff2000";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,4,0,7);ctx.fill();}else if(e.isDemon){ctx.fillStyle="#c050ff";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,4,0,7);ctx.fill();}else{ctx.fillStyle="#dc2828";ctx.beginPath();ctx.arc(ox+e.x*s,oy+e.y*s,3,0,7);ctx.fill();}}for(const p of pickups){ctx.fillStyle=p.kind==="medkit"?"#ffffff":"#dcc83c";ctx.beginPath();ctx.arc(ox+p.x*s,oy+p.y*s,2,0,7);ctx.fill();}ctx.fillStyle="#3cb4ff";ctx.beginPath();ctx.arc(ox+player.x*s,oy+player.y*s,4,0,7);ctx.fill();ctx.strokeStyle="#3cb4ff";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ox+player.x*s,oy+player.y*s);ctx.lineTo(ox+(player.x+Math.cos(player.angle)*1.2)*s,oy+(player.y+Math.sin(player.angle)*1.2)*s);ctx.stroke();}
+function renderBossBar(){if(!boss||!boss.alive)return;const barW=Math.min(700,VW-100),barH=22;const x=(VW-barW)/2,y=14;ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(x-4,y-4,barW+8,barH+8);const bc=boss.isCircleBoss?"#ff8020":boss.isHellBoss?"#ff4020":"#c83030";ctx.strokeStyle=bc;ctx.lineWidth=2;ctx.strokeRect(x-4,y-4,barW+8,barH+8);const fr=Math.max(0,boss.hp/boss.maxHp);ctx.fillStyle="#3a0a0a";ctx.fillRect(x,y,barW,barH);ctx.fillStyle=bc;ctx.fillRect(x,y,barW*fr,barH);ctx.font="bold 16px Consolas, monospace";ctx.fillStyle="#fff";const nm=boss.isCircleBoss?HELL_CIRCLE_BOSS_NAMES[boss.circle]:boss.isHellBoss?"ВЛАДЫКА ПРЕИСПОДНЕЙ":"ПОВЕЛИТЕЛЬ БЕЗДНЫ";const txt="БОСС: "+nm+"  —  "+Math.max(0,boss.hp|0)+" / "+boss.maxHp;const tw=ctx.measureText(txt).width;ctx.fillText(txt,VW/2-tw/2,y+barH-6);}
 function renderHud(){ctx.fillStyle="#1e1e1e";ctx.fillRect(20,VH-60,220,30);const hpW=Math.max(0,Math.floor(220*player.hp/100));ctx.fillStyle=player.hp>30?"#dc2828":"#ff6428";ctx.fillRect(20,VH-60,hpW,30);ctx.font="bold 20px Consolas, monospace";ctx.fillStyle="#fff";ctx.fillText("HP: "+Math.max(0,player.hp|0),28,VH-38);ctx.fillStyle="#ffdc50";ctx.fillText("AMMO: "+player.ammo,VW-180,VH-38);ctx.fillStyle="#c8c8ff";ctx.fillText("WEAPON: "+player.weapon.toUpperCase(),VW/2-80,VH-38);ctx.fillStyle="#c8ffc8";ctx.fillText("SCORE: "+player.score,VW/2-80,35);ctx.fillStyle="#c8c8c8";ctx.font="14px Consolas, monospace";ctx.fillText("WASD | Мышь | ПКМ - прицел | ЛКМ - выстрел | Q - оружие | ESC - меню",10,VH-8);let title="";if(isCircleBoss)title="★★★ "+HELL_CIRCLE_BOSS_NAMES[currentCircle]+" ★★★";else if(isHellBossLevel)title="★★ БОСС ПРЕИСПОДНЕЙ ★★";else if(isBossLevel)title="★ БОСС: ПОВЕЛИТЕЛЬ БЕЗДНЫ ★";else if(isPage3)title=HELL_CIRCLE_NAMES[currentCircle]+" — ур. "+(levelIdx+1)+": "+HELL_CIRCLE_LEVEL_NAMES[currentCircle][levelIdx];else if(isPage2)title="СТР 2 — "+(levelIdx+1)+": "+PAGE2_NAMES[levelIdx];else title="Уровень "+(levelIdx+1)+": "+PAGE1_NAMES[levelIdx];ctx.font="bold 18px Consolas, monospace";ctx.fillStyle=isCircleBoss?"#ff8020":isHellBossLevel?"#ff4020":isPage3?"#ff8040":isPage2?"#d0a0ff":"#dcdcf0";const tw=ctx.measureText(title).width;ctx.fillText(title,VW/2-tw/2,55);}
 
-function drawMenuBg(dt){const slot=getSlot();const theme=slot.menuTheme||"default";
+/* ФОН МЕНЮ (как в v8.3) */
+function drawMenuBg(dt){const slot=getSlot();const theme=slot?slot.menuTheme:"default";
   if(theme==="matrix"){ctx.fillStyle="#000";ctx.fillRect(0,0,VW,VH);ctx.font="16px Consolas, monospace";for(const c of matrixCols){c.y+=c.speed*dt;if(c.y>VH+20){c.y=-20;c.x=Math.random()*VW;}ctx.fillStyle="rgba(0,255,80,0.7)";ctx.fillText(c.char,c.x,c.y);if(Math.random()<0.02)c.char=String.fromCharCode(0x30A0+Math.floor(Math.random()*96));}}
   else if(theme==="hell"){const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#1a0505");grad.addColorStop(0.6,"#3a0808");grad.addColorStop(1,"#6a1500");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);for(let i=0;i<12;i++){const y=VH-40+Math.sin(menuTime*0.8+i)*8;ctx.fillStyle="rgba(255,"+(60+i*8)+",0,0.4)";ctx.fillRect(0,y,VW,3);}}
   else if(theme==="aurora"){const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#02101a");grad.addColorStop(1,"#001a1a");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);for(let i=0;i<5;i++){const y=VH*0.3+Math.sin(menuTime*0.5+i*0.8)*100;const g2=ctx.createLinearGradient(0,y-60,0,y+60);g2.addColorStop(0,"rgba(0,0,0,0)");g2.addColorStop(0.5,"rgba(0,"+(150+i*20)+","+(200-i*30)+",0.25)");g2.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=g2;ctx.fillRect(0,y-60,VW,120);}}
@@ -330,10 +455,11 @@ function drawMenuBg(dt){const slot=getSlot();const theme=slot.menuTheme||"defaul
   else{const grad=ctx.createRadialGradient(VW/2,VH/2,0,VW/2,VH/2,Math.max(VW,VH)/2);grad.addColorStop(0,"#231f3c");grad.addColorStop(1,"#050508");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);for(const s of stars){s.y+=s.speed*dt;if(s.y>VH){s.y=-2;s.x=Math.random()*VW;}const f=0.8+0.2*Math.sin(menuTime*3+s.phase);ctx.globalAlpha=(s.alpha/255)*f;ctx.fillStyle=s.color;if(s.r===1)ctx.fillRect(s.x,s.y,1,1);else{ctx.fillRect(s.x-1,s.y-1,3,3);ctx.fillRect(s.x-3,s.y,7,1);ctx.fillRect(s.x,s.y-3,1,7);}}ctx.globalAlpha=1;}
 }
 function drawTitle(){const text="PYTHON DOOM";const cx=VW/2;ctx.font="bold 64px Consolas, monospace";const w=ctx.measureText(text).width;ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillText(text,cx-w/2+4,130+4);ctx.fillStyle="#dc2828";ctx.fillText(text,cx-w/2,130);const pulse=0.5+0.5*Math.sin(menuTime*2);ctx.fillStyle="rgba(255,180,60,"+(0.35+0.65*pulse)+")";ctx.fillText(text,cx-w/2,130);}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function drawCrossLines(x,y,gap,len){ctx.beginPath();ctx.moveTo(x-gap-len,y);ctx.lineTo(x-gap,y);ctx.moveTo(x+gap,y);ctx.lineTo(x+gap+len,y);ctx.moveTo(x,y-gap-len);ctx.lineTo(x,y-gap);ctx.moveTo(x,y+gap);ctx.lineTo(x,y+gap+len);ctx.stroke();}
 function drawCursor(now){
   if(state===GAME_STATE.PLAYING)return;
-  const x=mouseX,y=mouseY;const pulse=0.5+0.5*Math.sin(now*0.005);const theme=(getSlot().cursorTheme)||"default";
+  const x=mouseX,y=mouseY;const pulse=0.5+0.5*Math.sin(now*0.005);const theme=(activeUser?activeUser.cursorTheme:"default")||"default";
   if(theme==="green"){const gap=5,len=10;ctx.strokeStyle="rgba(0,0,0,0.65)";ctx.lineWidth=4;drawCrossLines(x,y,gap,len);ctx.strokeStyle="#00ff50";ctx.lineWidth=2;drawCrossLines(x,y,gap,len);ctx.fillStyle="#00ff50";ctx.beginPath();ctx.arc(x,y,2,0,7);ctx.fill();}
   else if(theme==="gold"){const glow=ctx.createRadialGradient(x,y,0,x,y,22);glow.addColorStop(0,"rgba(255,215,0,"+(0.4+0.2*pulse)+")");glow.addColorStop(1,"rgba(255,215,0,0)");ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,22,0,7);ctx.fill();const gap=4,len=10+pulse*2;ctx.strokeStyle="rgba(0,0,0,0.75)";ctx.lineWidth=5;drawCrossLines(x,y,gap,len);ctx.strokeStyle="#ffd700";ctx.lineWidth=2;drawCrossLines(x,y,gap,len);ctx.fillStyle="#fff5b0";ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();}
   else if(theme==="neon"){const glow=ctx.createRadialGradient(x,y,0,x,y,20);glow.addColorStop(0,"rgba(80,200,255,"+(0.4+0.25*pulse)+")");glow.addColorStop(1,"rgba(80,200,255,0)");ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,20,0,7);ctx.fill();const gap=6,len=11;ctx.strokeStyle="rgba(0,0,0,0.7)";ctx.lineWidth=5;drawCrossLines(x,y,gap,len);ctx.strokeStyle="#50c8ff";ctx.lineWidth=2;drawCrossLines(x,y,gap,len);ctx.fillStyle="#b0e8ff";ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();}
@@ -345,27 +471,89 @@ function drawCursor(now){
   else{const glow=ctx.createRadialGradient(x,y,0,x,y,18);glow.addColorStop(0,"rgba(255,60,60,"+(0.25+0.15*pulse)+")");glow.addColorStop(1,"rgba(255,60,60,0)");ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,18,0,7);ctx.fill();const len=9+pulse*2,gap=4;ctx.strokeStyle="rgba(0,0,0,0.65)";ctx.lineWidth=4;drawCrossLines(x,y,gap,len);ctx.strokeStyle="rgba(255,240,240,0.98)";ctx.lineWidth=2;drawCrossLines(x,y,gap,len);ctx.fillStyle="#ffdcdc";ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();}
 }
 
+/* ============================================================
+   ЭКРАНЫ AUTH / USERS / SAVE_CODE
+   ============================================================ */
+function drawAuthScreen(dt){
+  drawMenuBg(dt);drawTitle();
+  ctx.font="20px Consolas, monospace";ctx.fillStyle="#b4b4dc";
+  let sub=authMode==="login"?"Вход — введите ник и пароль":authMode==="register"?"Регистрация — придумайте ник и пароль":"Импорт — вставьте код сохранения";
+  ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,170);
+  const bw=460,bx=VW/2-bw/2;let by=210;
+  if(authMode!=="import"){
+    ctx.fillStyle="#c8c8e0";ctx.font="16px Consolas, monospace";ctx.fillText("Никнейм (3-16 символов):",bx,by);
+    ctx.fillStyle=authFocus==="nick"?"#3a4a5a":"#1a1a26";roundRect(bx,by+8,bw,42,8);ctx.fill();ctx.strokeStyle=authFocus==="nick"?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(bx,by+8,bw,42,8);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.font="bold 22px Consolas, monospace";ctx.fillText(authNick+(authFocus==="nick"&&Math.floor(menuTime*2)%2?"|":""),bx+12,by+36);by+=80;
+    ctx.fillStyle="#c8c8e0";ctx.font="16px Consolas, monospace";ctx.fillText("Пароль (4-32 символа):",bx,by);
+    ctx.fillStyle=authFocus==="pass"?"#3a4a5a":"#1a1a26";roundRect(bx,by+8,bw,42,8);ctx.fill();ctx.strokeStyle=authFocus==="pass"?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(bx,by+8,bw,42,8);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.font="bold 22px Consolas, monospace";ctx.fillText("•".repeat(authPass.length)+(authFocus==="pass"&&Math.floor(menuTime*2)%2?"|":""),bx+12,by+36);by+=80;
+  }else{
+    ctx.fillStyle="#c8c8e0";ctx.font="16px Consolas, monospace";ctx.fillText("Код сохранения (DOOM-...):",bx,by);
+    ctx.fillStyle=authFocus==="code"?"#3a4a5a":"#1a1a26";roundRect(bx,by+8,bw,120,8);ctx.fill();ctx.strokeStyle=authFocus==="code"?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(bx,by+8,bw,120,8);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.font="bold 14px Consolas, monospace";const lines=authCode.match(/.{1,40}/g)||[""];for(let i=0;i<lines.length&&i<5;i++)ctx.fillText(lines[i],bx+12,by+34+i*22);by+=160;
+  }
+  if(authError){ctx.fillStyle="#ff5050";ctx.font="16px Consolas, monospace";ctx.fillText(authError,VW/2-ctx.measureText(authError).width/2,by+10);}
+  const modeY=VH-160;
+  const modes=[{k:"login",t:"ВХОД",x:VW/2-330,w:200},{k:"register",t:"РЕГИСТРАЦИЯ",x:VW/2-110,w:220},{k:"import",t:"ИМПОРТ КОДА",x:VW/2+130,w:200}];
+  for(const m of modes){const active=authMode===m.k;const h=mouseX>=m.x&&mouseX<=m.x+m.w&&mouseY>=modeY&&mouseY<=modeY+40;ctx.fillStyle=active?"#3a4a5a":(h?"#2c3640":"#1e2430");roundRect(m.x,modeY,m.w,40,8);ctx.fill();ctx.strokeStyle=active?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(m.x,modeY,m.w,40,8);ctx.stroke();ctx.fillStyle=active?"#fff":"#c8c8e0";ctx.font="bold 16px Consolas, monospace";ctx.fillText(m.t,m.x+m.w/2-ctx.measureText(m.t).width/2,modeY+26);}
+  const mainY=VH-100,bw2=300,bx2=VW/2-bw2/2;const mainH=mouseX>=bx2&&mouseX<=bx2+bw2&&mouseY>=mainY&&mouseY<=mainY+50;
+  let mainTxt=authBusy?"...":authMode==="login"?"ВОЙТИ":authMode==="register"?"ЗАРЕГИСТРИРОВАТЬСЯ":"ИМПОРТИРОВАТЬ";
+  ctx.fillStyle=mainH?"#1a5c3a":"#1a4028";roundRect(bx2,mainY,bw2,50,10);ctx.fill();ctx.strokeStyle="#3cdc78";ctx.lineWidth=2;roundRect(bx2,mainY,bw2,50,10);ctx.stroke();ctx.fillStyle="#e0ffe0";ctx.font="bold 20px Consolas, monospace";ctx.fillText(mainTxt,bx2+bw2/2-ctx.measureText(mainTxt).width/2,mainY+33);
+  if(users.length>0){const listY=mainY-45;ctx.fillStyle="#8caaff";ctx.font="15px Consolas, monospace";const lt="Локальных профилей: "+users.length+" ("+users.map(u=>u.nick).slice(0,6).join(", ")+(users.length>6?", …":"")+")";ctx.fillText(lt,VW/2-ctx.measureText(lt).width/2,listY);}
+}
+function drawUsersScreen(dt){
+  drawMenuBg(dt);ctx.fillStyle="#dcc850";ctx.font="bold 44px Consolas, monospace";const t="ПРОФИЛЬ";const tw=ctx.measureText(t).width;ctx.fillText(t,VW/2-tw/2,60);
+  const act=activeUser;ctx.fillStyle="#c8c8e0";ctx.font="16px Consolas, monospace";const sub="Активный игрок: "+(act?act.nick:"—");ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,95);
+  const outY=120,bw2=260,bx2=VW-290;const outH=mouseX>=bx2&&mouseX<=bx2+bw2&&mouseY>=outY&&mouseY<=outY+36;
+  ctx.fillStyle=outH?"#4a3a1c":"#33240f";roundRect(bx2,outY,bw2,36,8);ctx.fill();ctx.strokeStyle="#ffcc50";ctx.lineWidth=2;roundRect(bx2,outY,bw2,36,8);ctx.stroke();
+  ctx.fillStyle="#ffe6a0";ctx.font="bold 14px Consolas, monospace";const ot="МОЙ КОД СОХРАНЕНИЯ";ctx.fillText(ot,bx2+bw2/2-ctx.measureText(ot).width/2,outY+24);
+  const swY=170,bw3=260,bx3=VW-290;const swH=mouseX>=bx3&&mouseX<=bx3+bw3&&mouseY>=swY&&mouseY<=swY+36;
+  ctx.fillStyle=swH?"#4a2030":"#2a1018";roundRect(bx3,swY,bw3,36,8);ctx.fill();ctx.strokeStyle="#ff6070";ctx.lineWidth=2;roundRect(bx3,swY,bw3,36,8);ctx.stroke();
+  ctx.fillStyle="#ffc0c8";ctx.font="bold 14px Consolas, monospace";const st="СМЕНИТЬ ПОЛЬЗОВАТЕЛЯ";ctx.fillText(st,bx3+bw3/2-ctx.measureText(st).width/2,swY+24);
+  const listY=230,rowH=80;const cardW=560,cx0=VW/2-cardW/2;
+  ctx.save();ctx.beginPath();ctx.rect(0,listY,VW,VH-listY-80);ctx.clip();
+  for(let i=0;i<users.length;i++){
+    const u=users[i];const cy=listY+i*rowH;if(cy>VH-80)break;
+    const isActive=act&&u.nick===act.nick;const h=mouseX>=cx0&&mouseX<=cx0+cardW&&mouseY>=cy&&mouseY<=cy+rowH-10;
+    ctx.fillStyle=isActive?"#1a4028":(h?"#3c4660":"#28303c");roundRect(cx0,cy,cardW,rowH-10,10);ctx.fill();
+    ctx.strokeStyle=isActive?"#3cdc78":(h?"#7eaaff":"#506478");ctx.lineWidth=isActive?3:2;roundRect(cx0,cy,cardW,rowH-10,10);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.font="bold 22px Consolas, monospace";ctx.fillText(u.nick+(u.passHash?"":" (без пароля)"),cx0+20,cy+30);
+    ctx.fillStyle="#c8c8e0";ctx.font="14px Consolas, monospace";const c3=u.unlockedPage3||[1,0,0,0,0,0,0];const total3=c3.reduce((a,v)=>a+v,0);
+    ctx.fillText("Стр1: "+(u.unlocked-1)+"/52 | Стр2: "+u.unlockedPage2+"/31 | Стр3: "+total3+"/77 | Рун: "+u.runes,cx0+20,cy+52);
+    ctx.fillStyle=isActive?"#3cdc78":"#8c8ca4";ctx.font="13px Consolas, monospace";ctx.fillText(isActive?"★ ТЕКУЩИЙ ИГРОК":"Нажмите, чтобы войти как "+u.nick,cx0+20,cy+68);
+  }
+  ctx.restore();
+  const addY=VH-70,bw4=260,bx4=VW/2-bw4-10;const addH=mouseX>=bx4&&mouseX<=bx4+bw4&&mouseY>=addY&&mouseY<=addY+45;
+  ctx.fillStyle=addH?"#1a5c3a":"#1a4028";roundRect(bx4,addY,bw4,45,10);ctx.fill();ctx.strokeStyle="#3cdc78";ctx.lineWidth=2;roundRect(bx4,addY,bw4,45,10);ctx.stroke();
+  ctx.fillStyle="#e0ffe0";ctx.font="bold 16px Consolas, monospace";const at="+ НОВЫЙ ИГРОК";ctx.fillText(at,bx4+bw4/2-ctx.measureText(at).width/2,addY+28);
+  const impY=VH-70,bw5=260,bx5=VW/2+10;const impH=mouseX>=bx5&&mouseX<=bx5+bw5&&mouseY>=impY&&mouseY<=impY+45;
+  ctx.fillStyle=impH?"#4a3a1c":"#33240f";roundRect(bx5,impY,bw5,45,10);ctx.fill();ctx.strokeStyle="#ffcc50";ctx.lineWidth=2;roundRect(bx5,impY,bw5,45,10);ctx.stroke();
+  ctx.fillStyle="#ffe6a0";ctx.font="bold 16px Consolas, monospace";const it="ИМПОРТ КОДА";ctx.fillText(it,bx5+bw5/2-ctx.measureText(it).width/2,impY+28);
+}
+function drawSaveCodeScreen(dt){
+  drawMenuBg(dt);ctx.fillStyle="#dcc850";ctx.font="bold 40px Consolas, monospace";const t="КОД СОХРАНЕНИЯ";const tw=ctx.measureText(t).width;ctx.fillText(t,VW/2-tw/2,70);
+  ctx.fillStyle="#c8c8e0";ctx.font="16px Consolas, monospace";const sub="Сохраните код — он восстанавливает весь прогресс на другом устройстве";ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,110);
+  ctx.fillStyle="#ff9c9c";ctx.font="14px Consolas, monospace";const warn="⚠ Никому не показывайте код — он даёт полный доступ к профилю";ctx.fillText(warn,VW/2-ctx.measureText(warn).width/2,140);
+  const bw=760,bh=220,bx=VW/2-bw/2,by=170;
+  ctx.fillStyle="#1a1a26";roundRect(bx,by,bw,bh,10);ctx.fill();ctx.strokeStyle="#506478";ctx.lineWidth=2;roundRect(bx,by,bw,bh,10);ctx.stroke();
+  ctx.fillStyle="#c8ffc8";ctx.font="bold 15px Consolas, monospace";const lines=saveCodeText.match(/.{1,60}/g)||[""];for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],bx+15,by+30+i*24);
+  const cpY=by+bh+25,bw2=280,bx2=VW/2-bw2/2;const cpH=mouseX>=bx2&&mouseX<=bx2+bw2&&mouseY>=cpY&&mouseY<=cpY+50;
+  ctx.fillStyle=cpH?"#1a5c3a":"#1a4028";roundRect(bx2,cpY,bw2,50,10);ctx.fill();ctx.strokeStyle="#3cdc78";ctx.lineWidth=2;roundRect(bx2,cpY,bw2,50,10);ctx.stroke();
+  ctx.fillStyle="#e0ffe0";ctx.font="bold 18px Consolas, monospace";const cpt=saveCodeCopied>0?"СКОПИРОВАНО!":"СКОПИРОВАТЬ";ctx.fillText(cpt,bx2+bw2/2-ctx.measureText(cpt).width/2,cpY+32);
+  if(saveCodeMsg){ctx.fillStyle="#3cdc78";ctx.font="14px Consolas, monospace";ctx.fillText(saveCodeMsg,VW/2-ctx.measureText(saveCodeMsg).width/2,cpY+75);}
+  const backY=VH-70,bw3=180,bx3=30;const bkH=mouseX>=bx3&&mouseX<=bx3+bw3&&mouseY>=backY&&mouseY<=backY+45;
+  ctx.fillStyle=bkH?"#3c4660":"#28303c";roundRect(bx3,backY,bw3,45,10);ctx.fill();ctx.strokeStyle=bkH?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(bx3,backY,bw3,45,10);ctx.stroke();
+  ctx.fillStyle="#dcdcff";ctx.font="bold 18px Consolas, monospace";const bt="← НАЗАД";ctx.fillText(bt,bx3+bw3/2-ctx.measureText(bt).width/2,backY+28);
+}
+
+/* МЕНЮ (кнопка ПРОФИЛЬ) */
 let menuButtons=[];
-function rebuildMenuButtons(){menuButtons=[];const bw=320,bh=44,gap=8;const cx=VW/2-bw/2;const startY=170;const defs=[{text:"ИГРАТЬ",action:"play"},{text:"ВЫБОР УРОВНЯ",action:"levels"},{text:"ИГРОКИ И СЛОТЫ",action:"slots"},{text:"МАГАЗИН",action:"shop"},{text:"НАСТРОЙКИ",action:"settings"},{text:"ВЫХОД",action:"quit"}];defs.forEach((d,i)=>menuButtons.push({text:d.text,x:cx,y:startY+i*(bh+gap),w:bw,h:bh,action:d.action,appear:0,hover:0,delay:0.15+i*0.08}));}
-rebuildMenuButtons();
+function rebuildMenuButtons(){menuButtons=[];const bw=320,bh=44,gap=8;const cx=VW/2-bw/2;const startY=200;const defs=[{text:"ИГРАТЬ",action:"play"},{text:"ВЫБОР УРОВНЯ",action:"levels"},{text:"ПРОФИЛЬ",action:"slots"},{text:"МАГАЗИН",action:"shop"},{text:"НАСТРОЙКИ",action:"settings"},{text:"ВЫХОД",action:"quit"}];defs.forEach((d,i)=>menuButtons.push({text:d.text,x:cx,y:startY+i*(bh+gap),w:bw,h:bh,action:d.action,appear:0,hover:0,delay:0.15+i*0.08}));}
 function updateMenuButtons(dt){for(const b of menuButtons){if(menuTime>=b.delay&&b.appear<1)b.appear=Math.min(1,b.appear+dt*4);const h=pointInRect(mouseX,mouseY,b);b.hover+=((h?1:0)-b.hover)*Math.min(1,dt*12);}}
 function drawMenuButtons(){for(const b of menuButtons){if(b.appear<=0)continue;const off=(1-b.appear)*30,lift=b.hover*4;const x=b.x,y=b.y+off-lift;ctx.fillStyle="rgba(0,0,0,"+(0.5*b.appear)+")";roundRect(x+4,y+6,b.w,b.h,10);ctx.fill();const t=b.hover;const bg="rgb("+Math.round(40+t*25)+","+Math.round(50+t*30)+","+Math.round(70+t*45)+")";const bord="rgb("+Math.round(90+t*60)+","+Math.round(120+t*60)+","+Math.round(180+t*60)+")";const fg="rgb("+Math.round(220+t*35)+","+Math.round(220+t*35)+",255)";ctx.globalAlpha=b.appear;ctx.fillStyle=bg;roundRect(x,y,b.w,b.h,10);ctx.fill();ctx.strokeStyle=bord;ctx.lineWidth=2;roundRect(x,y,b.w,b.h,10);ctx.stroke();ctx.fillStyle=fg;ctx.font="bold 20px Consolas, monospace";const tw=ctx.measureText(b.text).width;ctx.fillText(b.text,x+b.w/2-tw/2,y+b.h/2+7);ctx.globalAlpha=1;}}
-function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function pointInRect(px,py,b){const off=(1-b.appear)*30,lift=b.hover*4;const x=b.x,y=b.y+off-lift;return px>=x&&px<=x+b.w&&py>=y&&py<=y+b.h;}
 
-let slotButtons=[];
-function rebuildSlotButtons(){slotButtons=[];const bw=200,bh=70,gapY=12;const startY=130;for(let i=0;i<SLOT_COUNT;i++)slotButtons.push({idx:i,x:40,y:startY+i*(bh+gapY),w:bw,h:bh,hover:0,appear:1,action:"select"});slotButtons.push({idx:-1,x:VW-460,y:130,w:200,h:50,hover:0,appear:1,action:"play"});slotButtons.push({idx:-2,x:VW-240,y:130,w:200,h:50,hover:0,appear:1,action:"rename"});slotButtons.push({idx:-3,x:VW-460,y:200,w:200,h:50,hover:0,appear:1,action:"reset"});slotButtons.push({idx:-4,x:VW-240,y:200,w:200,h:50,hover:0,appear:1,action:"delete"});}
-function drawSlotScreen(dt){drawMenuBg(dt);ctx.fillStyle="#dcc850";ctx.font="bold 44px Consolas, monospace";const t="ИГРОКИ И СЛОТЫ";const tw=ctx.measureText(t).width;ctx.fillText(t,VW/2-tw/2,70);
-  for(const b of slotButtons){
-    if(b.idx>=0){const slot=slots[b.idx];const h=mouseX>=b.x&&mouseX<=b.x+b.w&&mouseY>=b.y&&mouseY<=b.y+b.h;b.hover+=((h?1:0)-b.hover)*Math.min(1,dt*12);const active=(b.idx===activeSlot);const bg=active?"#4a3a1c":(h?"#3c4660":"#28303c");const bord=active?"#ffcc50":(h?"#7eaaff":"#506478");ctx.fillStyle=bg;roundRect(b.x,b.y,b.w,b.h,8);ctx.fill();ctx.strokeStyle=bord;ctx.lineWidth=active?3:2;roundRect(b.x,b.y,b.w,b.h,8);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 16px Consolas, monospace";ctx.fillText((b.idx+1)+". "+slot.name,b.x+10,b.y+24);ctx.font="11px Consolas, monospace";ctx.fillStyle="#c8c8e0";const c3=slot.unlockedPage3||[1,0,0,0,0,0,0];const total3=c3.reduce((a,v)=>a+v,0);ctx.fillText("Стр1: "+(slot.unlocked-1)+"/52 | Стр2: "+slot.unlockedPage2+"/31 | Стр3: "+total3+"/77",b.x+10,b.y+44);ctx.fillStyle="#ffcc50";let badge="";if(slot.hellBossDefeated)badge=" 👑";else if(slot.bossDefeated)badge=" ★";ctx.fillText("Рун: "+slot.runes+badge,b.x+10,b.y+62);continue;}
-    const h=mouseX>=b.x&&mouseX<=b.x+b.w&&mouseY>=b.y&&mouseY<=b.y+b.h;b.hover+=((h?1:0)-b.hover)*Math.min(1,dt*12);
-    let label,color;if(b.action==="play"){label="ИГРАТЬ";color="#3cdc78";}else if(b.action==="rename"){label="ПЕРЕИМЕНОВАТЬ";color="#3caaff";}else if(b.action==="reset"){label="СБРОСИТЬ";color="#ff9c3c";}else{label="УДАЛИТЬ";color="#ff5050";}
-    const t2=b.hover;ctx.fillStyle="rgb("+Math.round(30+t2*30)+","+Math.round(30+t2*30)+","+Math.round(40+t2*30)+")";roundRect(b.x,b.y,b.w,b.h,8);ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2;roundRect(b.x,b.y,b.w,b.h,8);ctx.stroke();ctx.fillStyle=color;ctx.font="bold 16px Consolas, monospace";const tw2=ctx.measureText(label).width;ctx.fillText(label,b.x+b.w/2-tw2/2,b.y+b.h/2+6);
-  }
-  drawBackButton();
-}
-function drawRenameScreen(dt){drawMenuBg(dt*0.3);ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(0,0,VW,VH);const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;ctx.fillStyle="#232838";roundRect(x,y,w,h,14);ctx.fill();ctx.strokeStyle="#4a90d0";ctx.lineWidth=2;roundRect(x,y,w,h,14);ctx.stroke();ctx.fillStyle="#dcc850";ctx.font="bold 26px Consolas, monospace";ctx.fillText("ПЕРЕИМЕНОВАТЬ СЛОТ "+(renameSlotIdx+1),x+30,y+50);ctx.fillStyle="#e6e6f0";ctx.font="20px Consolas, monospace";ctx.fillText("Имя:",x+30,y+110);ctx.fillStyle="#1a1a26";roundRect(x+90,y+90,470,36,6);ctx.fill();ctx.strokeStyle="#4a90d0";ctx.lineWidth=2;roundRect(x+90,y+90,470,36,6);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 20px Consolas, monospace";ctx.fillText(renameBuffer+(Math.floor(menuTime*2)%2?"|":""),x+105,y+116);const saveX=x+30,saveY=y+h-60,bw=200,bh=45;const cancelX=x+w-230;ctx.fillStyle="#1c4028";roundRect(saveX,saveY,bw,bh,8);ctx.fill();ctx.strokeStyle="#3cdc78";ctx.lineWidth=2;roundRect(saveX,saveY,bw,bh,8);ctx.stroke();ctx.fillStyle="#e0ffe0";ctx.font="bold 18px Consolas, monospace";let t="СОХРАНИТЬ";ctx.fillText(t,saveX+bw/2-ctx.measureText(t).width/2,saveY+bh/2+6);ctx.fillStyle="#402028";roundRect(cancelX,saveY,bw,bh,8);ctx.fill();ctx.strokeStyle="#c83030";ctx.lineWidth=2;roundRect(cancelX,saveY,bw,bh,8);ctx.stroke();ctx.fillStyle="#ffe0e0";t="ОТМЕНА";ctx.fillText(t,cancelX+bw/2-ctx.measureText(t).width/2,saveY+bh/2+6);}
-
+/* УРОВНИ (как в v8.3) */
 let levelButtons=[],levelScroll=0,levelScrollMax=0;
 function rebuildLevelButtons(){
   levelButtons=[];const cols=5,bw=150,bh=78,gapX=15,gapY=15;const gridW=cols*bw+(cols-1)*gapX;const startX=VW/2-gridW/2;const topMargin=currentPage===3?240:195,bottomMargin=90;const viewH=VH-topMargin-bottomMargin;const slot=getSlot();let total;
@@ -396,15 +584,14 @@ function drawLevelsScreen(dt){
     let bg,bord,fg;
     if(!b.enabled){bg="#28282d";bord="#3c3c41";fg="#6e6e6e";}
     else if(b.isCircleBoss){if(b.hover>0.5){bg="#8a2000";bord="#ff8020";fg="#ffe0c0";}else{bg="#4a1000";bord="#c04010";fg="#ffb080";}}
-    else if(b.isHellBoss){if(b.hover>0.5){bg="#6a1a1a";bord="#ff5050";fg="#ffe0e0";}else{bg="#3c1010";bord="#8a2020";fg="#ffb0b0";}}
-    else if(b.isBoss){if(b.hover>0.5){bg="#6a1a1a";bord="#ff5050";fg="#ffe0e0";}else{bg="#3c1010";bord="#8a2020";fg="#ffb0b0";}}
+    else if(b.isHellBoss||b.isBoss){if(b.hover>0.5){bg="#6a1a1a";bord="#ff5050";fg="#ffe0e0";}else{bg="#3c1010";bord="#8a2020";fg="#ffb0b0";}}
     else if(b.page===3){const col=HELL_CIRCLE_COLORS[b.circle];const colStr="rgb("+col.wall.join(",")+")";if(b.hover>0.5){bg=colStr+"80";bord="#ff8020";fg="#fff";}else{bg="#2e2030";bord=colStr;fg="#e0d0f0";}}
     else if(b.page===2){if(b.hover>0.5){bg="#4a2050";bord="#c060ff";fg="#f0d0ff";}else{bg="#2e1838";bord="#7a48a0";fg="#c8a8e0";}}
     else if(b.hover>0.5){bg="#3c4660";bord="#7eaaff";fg="#f0f0ff";}
     else{bg="#28303c";bord="#506478";fg="#dcdcff";}
     ctx.fillStyle=bg;roundRect(b.x,vy,b.w,b.h,8);ctx.fill();ctx.strokeStyle=bord;ctx.lineWidth=2;roundRect(b.x,vy,b.w,b.h,8);ctx.stroke();ctx.fillStyle=fg;ctx.font="bold 16px Consolas, monospace";
-    let title;if(b.isCircleBoss)title="★★ БОСС ★★";else if(b.isHellBoss)title="★★ БОСС ★★";else if(b.isBoss)title="★ БОСС ★";else title="УР. "+(b.idx+1);const tW=ctx.measureText(title).width;ctx.fillText(title,b.x+b.w/2-tW/2,vy+36);
-    ctx.font="11px Consolas, monospace";ctx.fillStyle=b.enabled?(b.isCircleBoss?"#ffc090":b.isHellBoss?"#ffc090":b.isBoss?"#ff9090":(b.page===3?"#ffa060":(b.page===2?"#d0a0ff":"#9c9cb4"))):"#5a5a64";
+    let title;if(b.isCircleBoss||b.isHellBoss)title="★★ БОСС ★★";else if(b.isBoss)title="★ БОСС ★";else title="УР. "+(b.idx+1);const tW=ctx.measureText(title).width;ctx.fillText(title,b.x+b.w/2-tW/2,vy+36);
+    ctx.font="11px Consolas, monospace";ctx.fillStyle=b.enabled?(b.isCircleBoss||b.isHellBoss||b.isBoss?"#ffc090":(b.page===3?"#ffa060":(b.page===2?"#d0a0ff":"#9c9cb4"))):"#5a5a64";
     let subtitle;if(!b.enabled)subtitle="заблокировано";else if(b.isCircleBoss)subtitle=HELL_CIRCLE_BOSS_NAMES[b.circle];else if(b.isHellBoss)subtitle="владыка преисподней";else if(b.isBoss)subtitle="финальный босс";else if(b.page===3)subtitle=HELL_CIRCLE_LEVEL_NAMES[b.circle][b.idx];else if(b.page===2)subtitle=PAGE2_NAMES[b.idx];else subtitle=PAGE1_NAMES[b.idx];
     const sW=ctx.measureText(subtitle).width;ctx.fillText(subtitle,b.x+b.w/2-sW/2,vy+60);
   }
@@ -415,6 +602,7 @@ function drawLevelsScreen(dt){
 let backHover=0;
 function drawBackButton(){const x=30,y=VH-70,w=180,h=45;const h2=mouseX>=x&&mouseX<=x+w&&mouseY>=y&&mouseY<=y+h;backHover+=((h2?1:0)-backHover)*0.15;ctx.fillStyle=h2?"#3c4660":"#28303c";roundRect(x,y,w,h,8);ctx.fill();ctx.strokeStyle=h2?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(x,y,w,h,8);ctx.stroke();ctx.fillStyle="#dcdcff";ctx.font="bold 20px Consolas, monospace";const t="← НАЗАД";ctx.fillText(t,x+w/2-ctx.measureText(t).width/2,y+h/2+7);}
 
+/* МАГАЗИН (как в v8.3) */
 let shopButtons=[],shopTab="menu";
 function rebuildShopButtons(){shopButtons=[];
   if(shopTab==="menu"||shopTab==="cursor"){const themes=THEMES[shopTab];const keys=Object.keys(themes);const cardW=200,cardH=120,gap=15;const cols=5;const startX=(VW-(cols*cardW+(cols-1)*gap))/2;const startY=200;keys.forEach((k,i)=>{const col=i%cols,row=(i/cols)|0;shopButtons.push({kind:shopTab,key:k,x:startX+col*(cardW+gap),y:startY+row*(cardH+gap),w:cardW,h:cardH,hover:0,appear:1});});}
@@ -445,7 +633,6 @@ function drawShopScreen(dt){
   }
   drawBackButton();
 }
-
 let sliderDrag=0,settingsVolume=masterVolume,settingsMusicVolume=musicVolume;
 function drawSettingsScreen(dt){
   drawMenuBg(dt);ctx.fillStyle="#dcc850";ctx.font="bold 44px Consolas, monospace";const t="НАСТРОЙКИ";const tw=ctx.measureText(t).width;ctx.fillText(t,VW/2-tw/2,70);
@@ -462,30 +649,31 @@ function drawSettingsScreen(dt){
 let confirmHoverYes=0,confirmHoverNo=0,confirmCallback=null,confirmMessage="";
 function drawConfirmDialog(dt){
   ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(0,0,VW,VH);const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;ctx.fillStyle="#232838";roundRect(x,y,w,h,14);ctx.fill();ctx.strokeStyle="#c84646";ctx.lineWidth=2;roundRect(x,y,w,h,14);ctx.stroke();ctx.fillStyle="#ffc850";ctx.font="bold 36px Consolas, monospace";ctx.fillText("!",x+30,y+55);ctx.font="bold 26px Consolas, monospace";ctx.fillText("ПОДТВЕРЖДЕНИЕ",x+70,y+55);ctx.fillStyle="#e6e6f0";ctx.font="18px Consolas, monospace";const lines=confirmMessage.split("\n");for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],x+30,y+110+i*28);
-  const yesX=x+40,noX=x+w-260,by=y+h-70,bw=220,bh=50;const yh=pointInRect(mouseX,mouseY,{x:yesX,y:by,w:bw,h:bh,appear:1,hover:0});const nh=pointInRect(mouseX,mouseY,{x:noX,y:by,w:bw,h:bh,appear:1,hover:0});confirmHoverYes+=((yh?1:0)-confirmHoverYes)*Math.min(1,dt*12);confirmHoverNo+=((nh?1:0)-confirmHoverNo)*Math.min(1,dt*12);
+  const yesX=x+40,noX=x+w-260,by=y+h-70,bw=220,bh=50;const yh=mouseX>=yesX&&mouseX<=yesX+bw&&mouseY>=by&&mouseY<=by+bh;const nh=mouseX>=noX&&mouseX<=noX+bw&&mouseY>=by&&mouseY<=by+bh;confirmHoverYes+=((yh?1:0)-confirmHoverYes)*Math.min(1,dt*12);confirmHoverNo+=((nh?1:0)-confirmHoverNo)*Math.min(1,dt*12);
   ctx.fillStyle="rgb("+Math.round(70+confirmHoverYes*40)+",25,25)";roundRect(yesX,by,bw,bh,10);ctx.fill();ctx.strokeStyle="rgb("+Math.round(180+confirmHoverYes*60)+",60,60)";ctx.lineWidth=2;roundRect(yesX,by,bw,bh,10);ctx.stroke();ctx.fillStyle="#ffe6e6";ctx.font="bold 18px Consolas, monospace";let t="ДА";ctx.fillText(t,yesX+bw/2-ctx.measureText(t).width/2,by+bh/2+7);
   ctx.fillStyle="rgb("+Math.round(40+confirmHoverNo*25)+","+Math.round(50+confirmHoverNo*30)+",70)";roundRect(noX,by,bw,bh,10);ctx.fill();ctx.strokeStyle="rgb("+Math.round(90+confirmHoverNo*60)+","+Math.round(120+confirmHoverNo*60)+",180)";ctx.lineWidth=2;roundRect(noX,by,bw,bh,10);ctx.stroke();ctx.fillStyle="#e6e6ff";t="ОТМЕНА";ctx.fillText(t,noX+bw/2-ctx.measureText(t).width/2,by+bh/2+7);
 }
 
+/* РЕВАРДЫ / ПЕРЕХОД (saveSlots → saveUsers) */
 function rewardRunesForLevel(page,idx,isBoss,isHellBoss,circle){const s=getSlot();if(isHellBoss){s.runes+=500;return;}if(isBoss){s.runes+=300;return;}if(page===3){const st=circleStats(circle);s.runes+=st.reward;return;}if(page===2){s.runes+=30;return;}s.runes+=15;}
-
 function advanceAfterWin(){
   const s=getSlot();
-  if(isHellBossLevel){if(!s.hellBossDefeated){s.hellBossDefeated=true;if(!s.unlockedPage3)s.unlockedPage3=[1,0,0,0,0,0,0];s.unlockedPage3[0]=1;rewardRunesForLevel(2,levelIdx,false,true,0);}saveSlots();exitToMenu();return;}
-  if(isBossLevel){if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false,0);}saveSlots();exitToMenu();return;}
+  if(isHellBossLevel){if(!s.hellBossDefeated){s.hellBossDefeated=true;if(!s.unlockedPage3)s.unlockedPage3=[1,0,0,0,0,0,0];s.unlockedPage3[0]=1;rewardRunesForLevel(2,levelIdx,false,true,0);}saveUsers();exitToMenu();return;}
+  if(isBossLevel){if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false,0);}saveUsers();exitToMenu();return;}
   if(isPage3){
     rewardRunesForLevel(3,levelIdx,false,false,currentCircle);
     if(isCircleBoss){
-      if(currentCircle<6){if(s.unlockedPage3[currentCircle+1]===0)s.unlockedPage3[currentCircle+1]=1;saveSlots();currentCircle=currentCircle+1;currentPage=3;levelIdx=0;loadLevel(0,3,currentCircle);return;}
-      else{saveSlots();exitToMenu();return;}
+      if(currentCircle<6){if(s.unlockedPage3[currentCircle+1]===0)s.unlockedPage3[currentCircle+1]=1;saveUsers();currentCircle=currentCircle+1;currentPage=3;levelIdx=0;loadLevel(0,3,currentCircle);return;}
+      else{saveUsers();exitToMenu();return;}
     }
-    if(levelIdx+1<=10){if(s.unlockedPage3[currentCircle]<levelIdx+2)s.unlockedPage3[currentCircle]=levelIdx+2;saveSlots();levelIdx=levelIdx+1;loadLevel(levelIdx,3,currentCircle);return;}
+    if(levelIdx+1<=10){if(s.unlockedPage3[currentCircle]<levelIdx+2)s.unlockedPage3[currentCircle]=levelIdx+2;saveUsers();levelIdx=levelIdx+1;loadLevel(levelIdx,3,currentCircle);return;}
     return;
   }
-  if(isPage2){rewardRunesForLevel(2,levelIdx,false,false,0);if(levelIdx+1>=PAGE2_RAW.length){levelIdx=PAGE2_RAW.length;loadLevel(levelIdx,2);return;}if(s.unlockedPage2<levelIdx+2)s.unlockedPage2=levelIdx+2;saveSlots();levelIdx=levelIdx+1;loadLevel(levelIdx,2);return;}
-  rewardRunesForLevel(1,levelIdx,false,false,0);if(levelIdx+1>s.unlocked){s.unlocked=levelIdx+2;if(s.unlocked>PAGE1_RAW.length+1)s.unlocked=PAGE1_RAW.length+1;}saveSlots();if(levelIdx+1>=PAGE1_RAW.length){levelIdx=PAGE1_RAW.length;loadLevel(levelIdx,1);return;}levelIdx=levelIdx+1;loadLevel(levelIdx,1);
+  if(isPage2){rewardRunesForLevel(2,levelIdx,false,false,0);if(levelIdx+1>=PAGE2_RAW.length){levelIdx=PAGE2_RAW.length;loadLevel(levelIdx,2);return;}if(s.unlockedPage2<levelIdx+2)s.unlockedPage2=levelIdx+2;saveUsers();levelIdx=levelIdx+1;loadLevel(levelIdx,2);return;}
+  rewardRunesForLevel(1,levelIdx,false,false,0);if(levelIdx+1>s.unlocked){s.unlocked=levelIdx+2;if(s.unlocked>PAGE1_RAW.length+1)s.unlocked=PAGE1_RAW.length+1;}saveUsers();if(levelIdx+1>=PAGE1_RAW.length){levelIdx=PAGE1_RAW.length;loadLevel(levelIdx,1);return;}levelIdx=levelIdx+1;loadLevel(levelIdx,1);
 }
 
+/* UPDATE/RENDER */
 function update(dt){
   menuTime+=dt;
   if(state===GAME_STATE.PLAYING){
@@ -513,15 +701,17 @@ function drawTouchControls(){const joyX=JOY_X,joyY=VH-JOY_Y;const fireX=VW-FIRE_
   ctx.fillStyle=aiming?"rgba(50,220,90,0.5)":"rgba(90,180,90,0.3)";ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#b4ffb4";ctx.lineWidth=3;ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ПРИЦЕЛ",aimX-26,aimY+4);
   ctx.fillStyle="rgba(80,140,220,0.3)";ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#8cb4ff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ОРУЖ.",swapX-22,swapY+4);}
 function render(dt){
-  if(state===GAME_STATE.MENU){drawMenuBg(dt);drawTitle();
+  if(state===GAME_STATE.AUTH)drawAuthScreen(dt);
+  else if(state===GAME_STATE.USERS)drawUsersScreen(dt);
+  else if(state===GAME_STATE.SAVE_CODE)drawSaveCodeScreen(dt);
+  else if(state===GAME_STATE.MENU){drawMenuBg(dt);drawTitle();
     ctx.font="18px Consolas, monospace";ctx.fillStyle="#b4b4dc";const act=getSlot();
     const c3=act.unlockedPage3||[1,0,0,0,0,0,0];const total3=c3.reduce((a,v)=>a+v,0);
-    const sub="Игрок: "+act.name+"  |  Руны: "+act.runes+"  |  Стр1: "+Math.max(0,act.unlocked-1)+"/52"+"  |  Стр2: "+act.unlockedPage2+"/31"+"  |  Стр3: "+total3+"/77";
-    ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,158);drawMenuButtons();
-    ctx.fillStyle="#8c8c9c";ctx.font="14px Consolas, monospace";const hint="ESC — выход   |   слот "+(activeSlot+1)+" / "+SLOT_COUNT;ctx.fillText(hint,VW/2-ctx.measureText(hint).width/2,VH-35);
-    ctx.fillStyle="#64647c";ctx.fillText("v8.3-js",VW-80,VH-15);
-  }else if(state===GAME_STATE.SLOTS)drawSlotScreen(dt);
-  else if(state===GAME_STATE.RENAME)drawRenameScreen(dt);
+    const sub="Игрок: "+act.nick+"  |  Руны: "+act.runes+"  |  Стр1: "+Math.max(0,act.unlocked-1)+"/52"+"  |  Стр2: "+act.unlockedPage2+"/31"+"  |  Стр3: "+total3+"/77";
+    ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,170);drawMenuButtons();
+    ctx.fillStyle="#8c8c9c";ctx.font="14px Consolas, monospace";const hint="ESC — выход";ctx.fillText(hint,VW/2-ctx.measureText(hint).width/2,VH-35);
+    ctx.fillStyle="#64647c";ctx.fillText("v9.0-auth",VW-100,VH-15);
+  }
   else if(state===GAME_STATE.LEVELS)drawLevelsScreen(dt);
   else if(state===GAME_STATE.SHOP)drawShopScreen(dt);
   else if(state===GAME_STATE.SETTINGS)drawSettingsScreen(dt);
@@ -533,7 +723,7 @@ function render(dt){
     if(gameOver||win){ctx.fillStyle="rgba(0,0,0,0.72)";ctx.fillRect(0,0,VW,VH);ctx.font="bold 52px Consolas, monospace";
       if(gameOver){ctx.fillStyle="#ff3c3c";const m=isCircleBoss?HELL_CIRCLE_BOSS_NAMES[currentCircle].toUpperCase()+" УБИЛ ВАС":isHellBossLevel?"ВЛАДЫКА ПРЕИСПОДНЕЙ УБИЛ ВАС":isBossLevel?"БОСС ПОБЕДИЛ":"ВЫ ПОГИБЛИ";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
       else if(isCircleBoss){ctx.fillStyle="#ff8020";const m=currentCircle===6?"★★★ ЛЮЦИФЕР ПОВЕРЖЕН! ИГРА ПРОЙДЕНА! ★★★":"★★★ "+HELL_CIRCLE_BOSS_NAMES[currentCircle].toUpperCase()+" ПАЛ! ★★★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffcc80";const s2=currentCircle===6?"Вы прошли все 7 кругов ада!":"Автопереход в "+HELL_CIRCLE_NAMES[currentCircle+1];ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
-      else if(isHellBossLevel){ctx.fillStyle="#ff4020";const m="★★ БОСС ПРЕИСПОДНЕЙ ПАЛ! ★★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffcc80";const s2="+500 рун! Страница 3 (7 кругов) открыта.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
+      else if(isHellBossLevel){ctx.fillStyle="#ff4020";const m="★★ БОСС ПРЕИСПОДНЕЙ ПАЛ! ★★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffcc80";const s2="+500 рун! Страница 3 открыта.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
       else if(isBossLevel){ctx.fillStyle="#ffcc00";const m="★ ПОБЕДА! БОСС ПОВЕРЖЕН ★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffe6a0";const s2="+300 рун! Страница 2 открыта.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
       else{ctx.fillStyle="#3cff78";const m=isPage3?HELL_CIRCLE_NAMES[currentCircle]+" — ур. "+(levelIdx+1)+" пройден!":isPage2?"УР. "+(levelIdx+1)+" СТР. 2 ПРОЙДЕН!":"УРОВЕНЬ "+(levelIdx+1)+" ПРОЙДЕН!";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
       ctx.font="20px Consolas, monospace";ctx.fillStyle="#dcdcdc";const sub="R — заново   |   Enter — продолжить   |   ESC — меню";ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,VH/2+80);
@@ -542,17 +732,28 @@ function render(dt){
   drawCursor(performance.now());
 }
 function loop(now){const dt=Math.min((now-lastTime)/1000||0.016,0.05);lastTime=now;update(dt);render(dt);requestAnimationFrame(loop);}
-setTimeout(()=>{try{ensureAudio();playTrackByKey(getSlot().musicMenu||"default",true);}catch(e){}},500);
-lastTime=performance.now();requestAnimationFrame(loop);
 
-let mouseX=VW/2,mouseY=VH/2;const keys={};
+/* INPUT */
 window.addEventListener("keydown",(e)=>{
-  keys[e.key.toLowerCase()]=true;
-  if(state===GAME_STATE.RENAME){if(e.key==="Enter"){const name=(renameBuffer.trim()||("Игрок "+(renameSlotIdx+1))).slice(0,20);slots[renameSlotIdx].name=name;saveSlots();state=GAME_STATE.SLOTS;rebuildSlotButtons();}else if(e.key==="Escape"){state=GAME_STATE.SLOTS;rebuildSlotButtons();}else if(e.key==="Backspace"){renameBuffer=renameBuffer.slice(0,-1);}else if(e.key.length===1&&renameBuffer.length<20){renameBuffer+=e.key;}e.preventDefault();return;}
-  if(e.key==="Escape"){if(state===GAME_STATE.PLAYING)exitToMenu();else if(state===GAME_STATE.LEVELS||state===GAME_STATE.SETTINGS||state===GAME_STATE.SLOTS||state===GAME_STATE.SHOP){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}else if(state===GAME_STATE.CONFIRM_RESET){state=GAME_STATE.MENU;rebuildMenuButtons();}}
-  if(e.key==="Enter"){if(state===GAME_STATE.PLAYING){if(win){advanceAfterWin();}else if(gameOver){exitToMenu();}}}
-  if((e.key==="r"||e.key==="к"||e.code==="KeyR")&&state===GAME_STATE.PLAYING&&(gameOver||win)){loadLevel(levelIdx,isPage3?3:isPage2?2:1,currentCircle);}
-  if((e.key==="q"||e.key==="й"||e.code==="KeyQ")&&state===GAME_STATE.PLAYING&&!gameOver&&!win){player.weapon=player.weapon==="pistol"?"shotgun":"pistol";}
+  const k=e.key;
+  if(state===GAME_STATE.AUTH){
+    if(authMode!=="import"){
+      if(k==="Tab"){authFocus=authFocus==="nick"?"pass":"nick";e.preventDefault();return;}
+      if(k==="Enter"){tryAuth();e.preventDefault();return;}
+      if(k==="Backspace"){if(authFocus==="nick")authNick=authNick.slice(0,-1);else authPass=authPass.slice(0,-1);e.preventDefault();return;}
+      if(k.length===1){if(authFocus==="nick"&&authNick.length<16)authNick+=k;else if(authFocus==="pass"&&authPass.length<32)authPass+=k;e.preventDefault();return;}
+    }else{
+      if(k==="Enter"){tryAuth();e.preventDefault();return;}
+      if(k==="Backspace"){authCode=authCode.slice(0,-1);e.preventDefault();return;}
+      if(k.length===1&&authCode.length<800){authCode+=k;e.preventDefault();return;}
+    }
+    return;
+  }
+  keys[k.toLowerCase()]=true;
+  if(k==="Escape"){if(state===GAME_STATE.PLAYING)exitToMenu();else if(state===GAME_STATE.LEVELS||state===GAME_STATE.SETTINGS||state===GAME_STATE.SHOP){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}else if(state===GAME_STATE.CONFIRM_RESET){state=GAME_STATE.MENU;rebuildMenuButtons();}else if(state===GAME_STATE.SAVE_CODE||state===GAME_STATE.USERS){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}}
+  if(k==="Enter"){if(state===GAME_STATE.PLAYING){if(win){advanceAfterWin();}else if(gameOver){exitToMenu();}}}
+  if((k==="r"||k==="к"||e.code==="KeyR")&&state===GAME_STATE.PLAYING&&(gameOver||win)){loadLevel(levelIdx,isPage3?3:isPage2?2:1,currentCircle);}
+  if((k==="q"||k==="й"||e.code==="KeyQ")&&state===GAME_STATE.PLAYING&&!gameOver&&!win){player.weapon=player.weapon==="pistol"?"shotgun":"pistol";}
   if(state===GAME_STATE.PLAYING)e.preventDefault();
 });
 window.addEventListener("keyup",(e)=>{keys[e.key.toLowerCase()]=false;});
@@ -572,14 +773,16 @@ canvas.addEventListener("mousedown",(e)=>{ensureAudio();
 });
 canvas.addEventListener("mouseup",(e)=>{if(e.button===2)aiming=false;if(e.button===0)sliderDrag=0;});
 canvas.addEventListener("contextmenu",(e)=>e.preventDefault());
-canvas.addEventListener("click",(e)=>{ensureAudio();if(state!==GAME_STATE.PLAYING){const r=canvas.getBoundingClientRect();const mx=(e.clientX-r.left)/r.width*VW;const my=(e.clientY-r.top)/r.height*VH;handleMenuClick(mx,my);}else if(document.pointerLockElement!==canvas&&!isTouchDevice)canvas.requestPointerLock();});
+canvas.addEventListener("click",(e)=>{ensureAudio();const r=canvas.getBoundingClientRect();const mx=(e.clientX-r.left)/r.width*VW;const my=(e.clientY-r.top)/r.height*VH;mouseX=mx;mouseY=my;
+  if(state!==GAME_STATE.PLAYING){handleClick(mx,my);}else if(document.pointerLockElement!==canvas&&!isTouchDevice)canvas.requestPointerLock();
+});
 document.addEventListener("mousemove",(e)=>{if(state===GAME_STATE.PLAYING&&document.pointerLockElement===canvas)mouseDX+=e.movementX||0;});
 canvas.addEventListener("wheel",(e)=>{if(state===GAME_STATE.LEVELS){levelScroll=clamp(levelScroll+e.deltaY*0.6,0,levelScrollMax);e.preventDefault();}},{passive:false});
 
 const JOY_R=70,JOY_X=100,JOY_Y=110;const FIRE_BTN={x:90,y:110,r:50},AIM_BTN={x:210,y:110,r:40},SWAP_BTN={x:210,y:210,r:40};
 function dist2(ax,ay,bx,by){const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;}
 function onTouchStart(e){ensureAudio();
-  if(state!==GAME_STATE.PLAYING){const t=e.changedTouches[0];const r=canvas.getBoundingClientRect();mouseX=(t.clientX-r.left)/r.width*VW;mouseY=(t.clientY-r.top)/r.height*VH;handleMenuClick(mouseX,mouseY);e.preventDefault();return;}
+  if(state!==GAME_STATE.PLAYING){const t=e.changedTouches[0];const r=canvas.getBoundingClientRect();mouseX=(t.clientX-r.left)/r.width*VW;mouseY=(t.clientY-r.top)/r.height*VH;handleClick(mouseX,mouseY);e.preventDefault();return;}
   for(const t of e.changedTouches){const r=canvas.getBoundingClientRect();const x=(t.clientX-r.left)/r.width*VW;const y=(t.clientY-r.top)/r.height*VH;
     const fireX=VW-FIRE_BTN.x,fireY=VH-FIRE_BTN.y;const aimX=VW-AIM_BTN.x,aimY=VH-AIM_BTN.y;const swapX=VW-SWAP_BTN.x,swapY=VH-SWAP_BTN.y;
     if(dist2(x,y,fireX,fireY)<FIRE_BTN.r*FIRE_BTN.r){touch.fireHeld=true;if(!gameOver&&!win)shoot();continue;}
@@ -600,19 +803,70 @@ canvas.addEventListener("touchmove",onTouchMove,{passive:false});
 canvas.addEventListener("touchend",onTouchEnd,{passive:false});
 canvas.addEventListener("touchcancel",onTouchEnd,{passive:false});
 
-function handleMenuClick(mx,my){
-  if(state===GAME_STATE.MENU){for(const b of menuButtons)if(pointInRect(mx,my,b)){doMenuAction(b.action);return;}}
-  else if(state===GAME_STATE.SLOTS){for(const b of slotButtons){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){
-    if(b.idx>=0){activeSlot=b.idx;saveActiveSlot();rebuildSlotButtons();playTrackByKey(getSlot().musicMenu||"default",true);return;}
-    if(b.action==="play"){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();return;}
-    if(b.action==="rename"){renameSlotIdx=activeSlot;renameBuffer=slots[activeSlot].name;state=GAME_STATE.RENAME;return;}
-    if(b.action==="reset"){confirmMessage="Сбросить прогресс слота \""+getSlot().name+"\"?\nВсе уровни, руны и покупки будут потеряны.";confirmCallback=()=>{const s=getSlot();const n=s.name;slots[activeSlot]=defaultSlot(n);saveSlots();state=GAME_STATE.SLOTS;rebuildSlotButtons();};state=GAME_STATE.CONFIRM_RESET;return;}
-    if(b.action==="delete"){confirmMessage="Удалить слот \""+getSlot().name+"\"?";confirmCallback=()=>{slots[activeSlot]=defaultSlot("Игрок "+(activeSlot+1));saveSlots();state=GAME_STATE.SLOTS;rebuildSlotButtons();};state=GAME_STATE.CONFIRM_RESET;return;}
-  }}
-  if(mx>=30&&mx<=210&&my>=VH-70&&my<=VH-25){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}
-  }else if(state===GAME_STATE.RENAME){const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;const saveX=x+30,saveY=y+h-60,bw=200,bh=45;const cancelX=x+w-230;
-    if(mx>=saveX&&mx<=saveX+bw&&my>=saveY&&my<=saveY+bh){const name=(renameBuffer.trim()||("Игрок "+(renameSlotIdx+1))).slice(0,20);slots[renameSlotIdx].name=name;saveSlots();state=GAME_STATE.SLOTS;rebuildSlotButtons();}
-    else if(mx>=cancelX&&mx<=cancelX+bw&&my>=saveY&&my<=saveY+bh){state=GAME_STATE.SLOTS;rebuildSlotButtons();}
+/* AUTH action */
+async function tryAuth(){
+  if(authBusy)return;authError="";
+  if(authMode==="login"){
+    const nick=authNick.trim();
+    if(nick.length<3||authPass.length<4){authError="Ник от 3 символов, пароль от 4";return;}
+    const u=findUser(nick);
+    if(!u){authError="Профиль не найден";return;}
+    if(u.passHash===""){activeUser=u;saveActiveUser();authPass="";authNick="";playTrackByKey(u.musicMenu||"default",true);state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();return;}
+    authBusy=true;const h=await sha256(nick.toLowerCase()+":"+authPass);authBusy=false;
+    if(h!==u.passHash){authError="Неверный пароль";return;}
+    activeUser=u;saveActiveUser();authPass="";authNick="";playTrackByKey(u.musicMenu||"default",true);state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();
+  }else if(authMode==="register"){
+    const nick=authNick.trim();
+    if(nick.length<3||nick.length>16){authError="Ник 3–16 символов";return;}
+    if(authPass.length<4||authPass.length>32){authError="Пароль 4–32 символа";return;}
+    if(users.length>=MAX_USERS){authError="Достигнут лимит профилей ("+MAX_USERS+")";return;}
+    if(findUser(nick)){authError="Ник «"+nick+"» уже занят";return;}
+    authBusy=true;const h=await sha256(nick.toLowerCase()+":"+authPass);authBusy=false;
+    const u=defaultUser(nick);u.passHash=h;
+    users.push(u);saveUsers();
+    activeUser=u;saveActiveUser();authPass="";authNick="";playTrackByKey(u.musicMenu||"default",true);state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();
+  }else if(authMode==="import"){
+    const res=applySaveCode(authCode);
+    if(!res.ok){authError=res.err||"Код повреждён или неверная контрольная сумма";return;}
+    activeUser=res.profile;saveActiveUser();authCode="";
+    playTrackByKey(activeUser.musicMenu||"default",true);state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();
+  }
+}
+function handleClick(mx,my){
+  if(state===GAME_STATE.AUTH){
+    const modeY=VH-160;
+    const modes=[{k:"login",t:"ВХОД",x:VW/2-330,w:200},{k:"register",t:"РЕГИСТРАЦИЯ",x:VW/2-110,w:220},{k:"import",t:"ИМПОРТ КОДА",x:VW/2+130,w:200}];
+    for(const m of modes){if(mx>=m.x&&mx<=m.x+m.w&&my>=modeY&&my<=modeY+40){authMode=m.k;authError="";authFocus=m.k==="import"?"code":"nick";return;}}
+    const bw=460,bx=VW/2-bw/2;let by=210;
+    if(authMode!=="import"){
+      if(mx>=bx&&mx<=bx+bw&&my>=by+8&&my<=by+50){authFocus="nick";return;}
+      if(mx>=bx&&mx<=bx+bw&&my>=by+88&&my<=by+130){authFocus="pass";return;}
+    }else{
+      if(mx>=bx&&mx<=bx+bw&&my>=by+8&&my<=by+128){authFocus="code";return;}
+    }
+    const mainY=VH-100,bw2=300,bx2=VW/2-bw2/2;if(mx>=bx2&&mx<=bx2+bw2&&my>=mainY&&my<=mainY+50){tryAuth();return;}
+  }else if(state===GAME_STATE.USERS){
+    const outY=120,bw2=260,bx2=VW-290;if(mx>=bx2&&mx<=bx2+bw2&&my>=outY&&my<=outY+36){saveCodeText=makeSaveCode();saveCodeMsg="";saveCodeCopied=0;state=GAME_STATE.SAVE_CODE;return;}
+    const swY=170,bw3=260,bx3=VW-290;if(mx>=bx3&&mx<=bx3+bw3&&my>=swY&&my<=swY+36){activeUser=null;saveActiveUser();authMode="login";authNick="";authPass="";authError="";authFocus="nick";state=GAME_STATE.AUTH;stopMusic();return;}
+    const listY=230,rowH=80,cardW=560,cx0=VW/2-cardW/2;
+    for(let i=0;i<users.length;i++){const u=users[i];const cy=listY+i*rowH;if(cy>VH-80)break;if(mx>=cx0&&mx<=cx0+cardW&&my>=cy&&my<=cy+rowH-10){
+      if(u.passHash===""){activeUser=u;saveActiveUser();playTrackByKey(u.musicMenu||"default",true);state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();return;}
+      authMode="login";authNick=u.nick;authPass="";authError="Введите пароль для профиля «"+u.nick+"»";authFocus="pass";state=GAME_STATE.AUTH;return;
+    }}
+    const addY=VH-70,bw4=260,bx4=VW/2-bw4-10;if(mx>=bx4&&mx<=bx4+bw4&&my>=addY&&my<=addY+45){state=GAME_STATE.AUTH;authMode="register";authNick="";authPass="";authError="";authFocus="nick";return;}
+    const impY=VH-70,bw5=260,bx5=VW/2+10;if(mx>=bx5&&mx<=bx5+bw5&&my>=impY&&my<=impY+45){state=GAME_STATE.AUTH;authMode="import";authCode="";authError="";authFocus="code";return;}
+  }else if(state===GAME_STATE.SAVE_CODE){
+    const bw=760,bh=220,bx=VW/2-bw/2,by=170;const cpY=by+bh+25,bw2=280,bx2=VW/2-bw2/2;
+    if(mx>=bx2&&mx<=bx2+bw2&&my>=cpY&&my<=cpY+50){
+      const txt=saveCodeText||"";
+      const done=()=>{saveCodeCopied=2;saveCodeMsg="Скопировано в буфер";};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(()=>{try{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);done();}catch(e){saveCodeMsg="Не удалось скопировать — выделите вручную";}});}
+      else{try{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);done();}catch(e){saveCodeMsg="Не удалось скопировать";}}
+      return;
+    }
+    const backY=VH-70,bw3=180,bx3=30;if(mx>=bx3&&mx<=bx3+bw3&&my>=backY&&my<=backY+45){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();return;}
+  }else if(state===GAME_STATE.MENU){
+    for(const b of menuButtons)if(pointInRect(mx,my,b)){doMenuAction(b.action);return;}
   }else if(state===GAME_STATE.LEVELS){
     if(mx>=30&&mx<=210&&my>=VH-70&&my<=VH-25){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();return;}
     const tabW=220,tabH=36;const tx1=VW/2-tabW*1.5-20,tx2=VW/2-tabW/2,tx3=VW/2+tabW/2+20;const ty=80;const slot=getSlot();
@@ -629,13 +883,13 @@ function handleMenuClick(mx,my){
     if(mx>=tx3&&mx<=tx3+tabW&&my>=ty&&my<=ty+tabH){shopTab="music";rebuildShopButtons();return;}
     for(const b of shopButtons){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){
       const item=b.kind==="music"?TRACKS[b.key]:THEMES[b.kind][b.key];const slot=getSlot();
-      if(b.kind==="music"){const owned=slot.ownedTracks.includes(b.key);if(owned){const im=slot.musicMenu===b.key,ig=slot.musicGame===b.key;if(im&&ig){slot.musicMenu="default";slot.musicGame="default";}else if(im){slot.musicMenu="default";slot.musicGame=b.key;}else if(ig){slot.musicMenu=b.key;slot.musicGame="default";}else{slot.musicMenu=b.key;slot.musicGame=b.key;}saveSlots();playTrackByKey(slot.musicMenu||"default",true);}else if(slot.runes>=item.price){slot.runes-=item.price;slot.ownedTracks.push(b.key);slot.musicMenu=b.key;slot.musicGame=b.key;saveSlots();playTrackByKey(b.key,true);}}
-      else{const arr=b.kind==="menu"?slot.ownedMenuThemes:slot.ownedCursorThemes;if(arr.includes(b.key)){if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}else if(slot.runes>=item.price){slot.runes-=item.price;arr.push(b.key);if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}}
+      if(b.kind==="music"){const owned=slot.ownedTracks.includes(b.key);if(owned){const im=slot.musicMenu===b.key,ig=slot.musicGame===b.key;if(im&&ig){slot.musicMenu="default";slot.musicGame="default";}else if(im){slot.musicMenu="default";slot.musicGame=b.key;}else if(ig){slot.musicMenu=b.key;slot.musicGame="default";}else{slot.musicMenu=b.key;slot.musicGame=b.key;}saveUsers();playTrackByKey(slot.musicMenu||"default",true);}else if(slot.runes>=item.price){slot.runes-=item.price;slot.ownedTracks.push(b.key);slot.musicMenu=b.key;slot.musicGame=b.key;saveUsers();playTrackByKey(b.key,true);}}
+      else{const arr=b.kind==="menu"?slot.ownedMenuThemes:slot.ownedCursorThemes;if(arr.includes(b.key)){if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveUsers();}else if(slot.runes>=item.price){slot.runes-=item.price;arr.push(b.key);if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveUsers();}}
       return;
     }}
     if(mx>=30&&mx<=210&&my>=VH-70&&my<=VH-25){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}
   }else if(state===GAME_STATE.SETTINGS){if(mx>=30&&mx<=210&&my>=VH-70&&my<=VH-25){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}}
-  else if(state===GAME_STATE.CONFIRM_RESET){const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;const yesX=x+40,noX=x+w-260,by=y+h-70,bw=220,bh=50;if(mx>=yesX&&mx<=yesX+bw&&my>=by&&my<=by+bh){if(confirmCallback)confirmCallback();confirmCallback=null;}else if(mx>=noX&&mx<=noX+bw&&my>=by&&my<=by+bh){confirmCallback=null;state=GAME_STATE.SLOTS;rebuildSlotButtons();}}
+  else if(state===GAME_STATE.CONFIRM_RESET){const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;const yesX=x+40,noX=x+w-260,by=y+h-70,bw=220,bh=50;if(mx>=yesX&&mx<=yesX+bw&&my>=by&&my<=by+bh){if(confirmCallback)confirmCallback();confirmCallback=null;}else if(mx>=noX&&mx<=noX+bw&&my>=by&&my<=by+bh){confirmCallback=null;state=GAME_STATE.MENU;rebuildMenuButtons();}}
 }
 function doMenuAction(action){
   if(action==="play"){const s=getSlot();const c3=s.unlockedPage3||[1,0,0,0,0,0,0];let lastCircle=-1;for(let c=6;c>=0;c--){if(c3[c]>0){lastCircle=c;break;}}
@@ -645,12 +899,20 @@ function doMenuAction(action){
     else{currentPage=1;levelIdx=Math.max(0,Math.min(s.unlocked-1,PAGE1_RAW.length));loadLevel(levelIdx,1);}
     state=GAME_STATE.PLAYING;if(!isTouchDevice)setTimeout(()=>canvas.requestPointerLock(),50);
   }else if(action==="levels"){state=GAME_STATE.LEVELS;levelScroll=0;currentPage=1;rebuildLevelButtons();}
-  else if(action==="slots"){state=GAME_STATE.SLOTS;rebuildSlotButtons();}
+  else if(action==="slots"){state=GAME_STATE.USERS;}
   else if(action==="shop"){state=GAME_STATE.SHOP;shopTab="menu";rebuildShopButtons();}
   else if(action==="settings"){settingsVolume=masterVolume;settingsMusicVolume=musicVolume;state=GAME_STATE.SETTINGS;}
   else if(action==="quit"){document.body.innerHTML="<div style='color:#fff;font-family:Consolas;padding:40px;font-size:20px'>Спасибо за игру!<br><br>Обновите страницу, чтобы вернуться.</div>";}
 }
-function exitToMenu(){if(document.exitPointerLock)document.exitPointerLock();aiming=false;touch.moveTouchId=null;touch.lookTouchId=null;touch.moveDX=0;touch.moveDY=0;state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();playTrackByKey(getSlot().musicMenu||"default",true);}
+function exitToMenu(){if(document.exitPointerLock)document.exitPointerLock();aiming=false;touch.moveTouchId=null;touch.lookTouchId=null;touch.moveDX=0;touch.moveDY=0;state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();const s=getSlot();if(s)playTrackByKey(s.musicMenu||"default",true);}
+
+/* INIT */
+(function initAuth(){
+  const n=loadActiveUserNick();
+  if(n){const u=users.find(x=>x.nick===n);if(u){activeUser=u;state=GAME_STATE.MENU;rebuildMenuButtons();setTimeout(()=>{try{ensureAudio();playTrackByKey(u.musicMenu||"default",true);}catch(e){}},500);return;}}
+  state=GAME_STATE.AUTH;
+})();
+lastTime=performance.now();requestAnimationFrame(loop);
 </script>
 </body>
 </html>
