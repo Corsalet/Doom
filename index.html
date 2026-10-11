@@ -21,7 +21,6 @@ const STORAGE_VOLUME="python_doom_volume_v1",STORAGE_MUSIC_VOLUME="python_doom_m
 const STORAGE_SLOTS="python_doom_slots_v1",STORAGE_ACTIVE_SLOT="python_doom_active_slot_v1";
 const SLOT_COUNT=5;let VW=960,VH=600;
 
-// === МУЗЫКА ===
 const TRACKS={
   default:{name:"Тёмный эмбиент",price:0,desc:"Простая синтезированная подложка",file:"",synth:{type:"ambient",base:55,tempo:0.5,wave:"sine"}},
   ya_pogib:{name:"Я погиб на поле боя",price:60,desc:"Медленный марш павшим",file:"https://www.dropbox.com/scl/fi/gu6uqm17tjd2ckjzvisla/ya_pogib.mp3?rlkey=2g6jhpl1fqzp871cy1afz6w5u&st=81q0utz1&raw=1",synth:{type:"march",base:70,tempo:0.35,wave:"sawtooth"}},
@@ -31,7 +30,6 @@ const TRACKS={
   korza_telo:{name:"KORZA — Telo pokhudelo",price:170,desc:"Тёмный техно-бит",file:"https://www.dropbox.com/scl/fi/up6xapa2ehgslh3fum4va/korza_telo.mp3?rlkey=ohfhhy3jarcfugk8qgt9yzfth&st=9i8m6vkf&raw=1",synth:{type:"techno",base:100,tempo:1.4,wave:"square"}}
 };
 
-// === КАРТЫ ===
 const PAGE1_RAW=[
 ["1111111111111111","1000000010000001","1011100010111001","1010000000010001","1010111110010001","1000100010000001","1110101010111101","1000101000100001","1011101111101101","1000001000001001","1011111011101001","1010000010000001","1010111010111101","1000100010000001","1011100010111002","1111111111111111"],
 ["11111111111111111111","10000000001000000001","10111111001011111001","10100001000010001001","10101101011010101001","10101000001000100001","10101111101011101101","10001000100010000001","11111010111010111101","10000010000010000001","10111110111110111001","10100000100000100001","10101110101110101101","10001000100000100001","10111011111011101101","10000010000000000001","10111110111111111001","10000000100000001001","10111110101111101002","11111111111111111111"],
@@ -87,7 +85,6 @@ const PAGE1_RAW=[
 ["11111111111111111111","10000000000000000001","10110111011011101101","10010001001000100001","10110101011010101101","10000101000010100001","10110101111010111101","10010001000010000001","10110101111011101101","10000000000000000001","10111111011111011101","10001000010000010001","10101111011111010101","10100000000000010101","10101111111111011102","10000000000000000001","11111111111111111111"]
 ];
 
-// Страница 2 — 30 уровней демонов
 const PAGE2_RAW=[
 ["11111111111111111111","10000000000000000001","10000000000000000001","10000011111000000001","10000010001000000001","10000010001000000001","10000011111000000001","10000000000000000001","10000000000000000001","10011111111111111001","10000000000000000001","10000000000000000001","10000011111000000001","10000010001000000001","10000010001000000002","10000011111000000001","10000000000000000001","10000000000000000001","10000000000000000001","11111111111111111111"],
 ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
@@ -123,8 +120,9 @@ const PAGE2_RAW=[
 ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"]
 ];
 
-// Страница 3 — 7 кругов ада. Каждый круг — 10 обычных уровней + босс (11 карт).
-// Всего 7 кругов = 77 карт. Используем общую базу карт с ре-цветом через темы.
+const BOSS_ARENA=["1111111111111111111111111111","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1111111111111111111111111111"];
+const HELL_BOSS_ARENA=["11111111111111111111111111111111","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","11111111111111111111111111111111"];
+
 const HELL_CIRCLE_NAMES=["Круг I — Лимб","Круг II — Похоть","Круг III — Чревоугодие","Круг IV — Жадность","Круг V — Гнев","Круг VI — Ересь","Круг VII — Насилие"];
 const HELL_CIRCLE_COLORS=[
   {wall:[100,100,110],floor:[50,50,55],ceil:[30,30,35]},
@@ -145,12 +143,7 @@ const HELL_CIRCLE_LEVEL_NAMES=[
   ["Трон ереси","Испепеление","Ложные боги","Проклятые книги","Чёрный алтарь","Слепые пророки","Осквернённый храм","Еретик","Костёр еретика","Пепел веры"],
   ["Цитадель тьмы","Ледяные бездны","Предательство","Круг измены","Три пасти","Вечная мерзлота","Пожиратель душ","Трон Люцифера","Пламя бездны","Врата финала"]
 ];
-
-// Базовые карты для кругов (используем PAGE2_RAW — 30 карт, чередуем по кругу)
 function getCircleLevelMap(circle,idx){return PAGE2_RAW[(circle*10+idx)%PAGE2_RAW.length];}
-
-const BOSS_ARENA=["1111111111111111111111111111","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1111111111111111111111111111"];
-const HELL_BOSS_ARENA=["11111111111111111111111111111111","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","11111111111111111111111111111111"];
 
 const PAGE1_NAMES=["Кирпичный лабиринт","Тёмный коридор","Крест","Спираль","Колонны","Арена","Бункер","Двойной крест","Ловушка","Финальная арена","Лабиринт I","Спираль II","Перекрёстки","Параллели","Спираль III","Решётка","Сетка","Тоннели","Спираль IV","Калейдоскоп","Спираль V","Шахматы","Полосы","Спираль VI","Дюны","Полосы II","Спираль VII","Зигзаг","Спираль VIII","Спираль IX","Западня I","Западня II","Западня III","Западня IV","Западня V","Крепость I","Крепость II","Крепость III","Крепость IV","Крепость V","Хаос I","Хаос II","Хаос III","Хаос IV","Хаос V","Пустота I","Пустота II","Пустота III","Пустошь","Обитель зла","Последний рубеж"];
 const PAGE2_NAMES=["Врата ада","Кровавый зал","Кости павших","Пепел и пламя","Логово демонов","Серное озеро","Разлом","Тени преисподней","Клеймо","Обсидиановый зал","Пекло","Ритуал крови","Катакомбы","Проклятый храм","Мясорубка","Мёртвая тишина","Печать бездны","Кровавый водопад","Трон Хаоса","Погребальный костёр","Молот дьявола","Крик душ","Тёмная купель","Ледяной предел","Костяной трон","Скорбь","Пламя возмездия","Глаз бури","Бездна","Владыка демонов"];
@@ -163,6 +156,14 @@ function resizeCanvas(){const w=Math.max(800,Math.min(window.innerWidth,1920));c
 window.addEventListener("resize",resizeCanvas);resizeCanvas();
 function clamp(v,mn,mx){return v<mn?mn:v>mx?mx:v;}
 function makeCanvas(w,h){const c=document.createElement("canvas");c.width=w;c.height=h;return c;}
+
+// Переменные для анимированных фонов
+const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*VW,y:Math.random()*VH,r:Math.random()<0.75?1:2,speed:8+Math.random()*37,alpha:60+Math.random()*140,color:["#c8dcff","#ffe6c8","#dcc8ff","#ffffff"][(Math.random()*4)|0],phase:Math.random()*6.28});
+const matrixCols=[];for(let i=0;i<60;i++)matrixCols.push({x:Math.random()*VW,y:Math.random()*VH,speed:40+Math.random()*80,char:String.fromCharCode(0x30A0+Math.floor(Math.random()*96))});
+const snowflakes=[];for(let i=0;i<80;i++)snowflakes.push({x:Math.random()*VW,y:Math.random()*VH,r:1+Math.random()*2,speed:20+Math.random()*60});
+const bloodDrops=[];for(let i=0;i<30;i++)bloodDrops.push({x:Math.random()*VW,y:Math.random()*VH,speed:30+Math.random()*80,len:8+Math.random()*20});
+const cyberLines=[];for(let i=0;i<20;i++)cyberLines.push({y:Math.random()*VH,speed:30+Math.random()*100,color:["#ff00aa","#00ffee","#aa00ff","#ffcc00"][(Math.random()*4)|0]});
+const fireSparks=[];for(let i=0;i<60;i++)fireSparks.push({x:Math.random()*VW,y:VH+Math.random()*200,speed:40+Math.random()*120,size:1+Math.random()*3});
 
 function makeWallTexture(baseColor,seed){const size=64;const tex=new Uint8ClampedArray(size*size*3);let s=seed;const rnd=()=>{s=(s*9301+49297)%233280;return s/233280;};const [br,bg,bb]=baseColor;
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){const brickY=y%16;const offset=((y/16)|0)%2?16:0;const brickX=(x+offset)%32;let r,g,b;
@@ -177,36 +178,30 @@ const TEX_EXIT=makeWallTexture([80,220,120],2);
 const TEX_BOSS_WALL=makeWallTexture([120,40,40],3);
 const TEX_DEMON_WALL=makeWallTexture([80,30,90],4);
 const TEX_HELL_WALL=makeWallTexture([160,50,20],5);
-// 7 текстур кругов
 const TEX_CIRCLE=[];
 for(let c=0;c<7;c++)TEX_CIRCLE.push(makeWallTexture(HELL_CIRCLE_COLORS[c].wall,100+c*7));
 
-// === СПРАЙТЫ ===
 function makeEnemySprite(){const c=makeCanvas(48,64);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(24,60,18,4,0,0,7);g.fill();g.fillStyle="#3a1010";g.beginPath();g.moveTo(14,14);g.lineTo(6,2);g.lineTo(20,12);g.closePath();g.fill();g.beginPath();g.moveTo(34,14);g.lineTo(42,2);g.lineTo(28,12);g.closePath();g.fill();g.fillStyle="#5a2020";g.fillRect(12,8,24,26);g.fillStyle="#3a1010";g.fillRect(12,8,24,4);g.fillStyle="#ff3030";g.fillRect(16,16,6,5);g.fillRect(26,16,6,5);g.fillStyle="#000";g.fillRect(18,17,2,3);g.fillRect(28,17,2,3);g.fillStyle="#000";g.fillRect(16,26,16,4);g.fillStyle="#fff";for(let i=0;i<4;i++)g.fillRect(17+i*4,26,2,3);g.fillStyle="#7a2a2a";g.fillRect(8,34,32,20);g.fillStyle="#4a1010";g.fillRect(8,34,32,4);g.fillStyle="#fff";for(let i=0;i<3;i++){g.fillRect(4+i*3,52,2,4);g.fillRect(38+i*3,52,2,4);}g.fillStyle="#3a1010";g.fillRect(12,52,10,8);g.fillRect(26,52,10,8);return c;}
 function makeDemonSprite(){const c=makeCanvas(64,80);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(32,74,26,5,0,0,7);g.fill();g.fillStyle="#2a0a2a";g.beginPath();g.moveTo(14,14);g.lineTo(6,0);g.lineTo(20,12);g.closePath();g.fill();g.beginPath();g.moveTo(50,14);g.lineTo(58,0);g.lineTo(44,12);g.closePath();g.fill();g.fillStyle="#5a1a5a";g.fillRect(12,8,40,30);g.fillStyle="#3a0a3a";g.fillRect(12,8,40,5);g.fillStyle="#ff3030";g.fillRect(18,18,8,7);g.fillRect(38,18,8,7);g.fillStyle="#000";g.fillRect(21,20,3,4);g.fillRect(41,20,3,4);g.fillStyle="#000";g.fillRect(18,30,28,6);g.fillStyle="#fff";for(let i=0;i<6;i++)g.fillRect(19+i*5,30,3,4);g.fillStyle="#7a2a7a";g.fillRect(8,38,48,34);g.fillStyle="#4a0a4a";g.fillRect(8,38,48,6);g.fillStyle="#fff";for(let i=0;i<3;i++){g.fillRect(2+i*4,68,3,6);g.fillRect(56+i*4,68,3,6);}g.fillStyle="#3a0a3a";g.fillRect(14,72,12,8);g.fillRect(38,72,12,8);return c;}
 function makeBossSprite(){const c=makeCanvas(96,128);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(48,120,34,6,0,0,7);g.fill();g.fillStyle="#3c0a0a";g.beginPath();g.moveTo(20,20);g.lineTo(12,2);g.lineTo(28,16);g.closePath();g.fill();g.beginPath();g.moveTo(76,20);g.lineTo(84,2);g.lineTo(68,16);g.closePath();g.fill();g.fillStyle="#5a1010";g.fillRect(16,12,64,44);g.fillStyle="#3a0808";g.fillRect(16,12,64,6);g.fillStyle="#ffcc00";g.fillRect(26,26,12,10);g.fillRect(58,26,12,10);g.fillStyle="#000";g.fillRect(30,30,4,6);g.fillRect(62,30,4,6);g.fillStyle="#000";g.fillRect(28,44,40,10);g.fillStyle="#fff";for(let i=0;i<8;i++)g.fillRect(30+i*5,44,3,5);g.fillStyle="#7a1a1a";g.fillRect(12,58,72,58);g.fillStyle="#4a0c0c";g.fillRect(12,58,72,8);g.strokeStyle="#b83a3a";g.lineWidth=2;for(let i=0;i<4;i++){g.beginPath();g.moveTo(20,68+i*12);g.quadraticCurveTo(48,76+i*12,76,68+i*12);g.stroke();}g.fillStyle="#3a0808";g.fillRect(0,62,14,46);g.fillRect(82,62,14,46);g.fillStyle="#fff";for(let i=0;i<3;i++){g.fillRect(2+i*4,106,3,6);g.fillRect(84+i*4,106,3,6);}g.fillStyle="#4a0c0c";g.fillRect(22,114,16,12);g.fillRect(58,114,16,12);return c;}
 function makeHellBossSprite(){const c=makeCanvas(120,160);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.6)";g.beginPath();g.ellipse(60,150,46,8,0,0,7);g.fill();g.fillStyle="#200000";g.beginPath();g.moveTo(20,24);g.lineTo(4,0);g.lineTo(30,18);g.closePath();g.fill();g.beginPath();g.moveTo(100,24);g.lineTo(116,0);g.lineTo(90,18);g.closePath();g.fill();g.beginPath();g.moveTo(34,18);g.lineTo(24,-2);g.lineTo(42,14);g.closePath();g.fill();g.beginPath();g.moveTo(86,18);g.lineTo(96,-2);g.lineTo(78,14);g.closePath();g.fill();g.fillStyle="#a01010";g.fillRect(24,16,72,50);g.fillStyle="#600000";g.fillRect(24,16,72,6);g.fillStyle="#ffff00";g.fillRect(34,30,14,12);g.fillRect(72,30,14,12);g.fillStyle="#ff2000";g.fillRect(38,34,6,6);g.fillRect(76,34,6,6);g.fillStyle="#000";g.fillRect(40,36,3,3);g.fillRect(78,36,3,3);g.fillStyle="#000";g.fillRect(32,52,56,12);g.fillStyle="#fff";for(let i=0;i<10;i++)g.fillRect(34+i*5,52,3,6);g.fillStyle="#c02020";g.fillRect(20,70,80,70);g.fillStyle="#800000";g.fillRect(20,70,80,10);g.strokeStyle="#ff3030";g.lineWidth=3;for(let i=0;i<5;i++){g.beginPath();g.moveTo(24,82+i*12);g.quadraticCurveTo(60,90+i*12,96,82+i*12);g.stroke();}g.fillStyle="#fff";for(let i=0;i<4;i++){g.fillRect(0+i*4,130,3,8);g.fillRect(108+i*4,130,3,8);}g.fillStyle="#600000";g.fillRect(0,72,20,60);g.fillRect(100,72,20,60);g.fillStyle="#800000";g.fillRect(24,138,20,12);g.fillRect(76,138,20,12);g.strokeStyle="rgba(255,120,0,0.4)";g.lineWidth=4;g.beginPath();g.arc(60,80,55,0,7);g.stroke();return c;}
-// 7 боссов кругов — разные цвета/формы
 function makeCircleBossSprite(circleIdx){
   const c=makeCanvas(96,128);const g=c.getContext("2d");
   const palettes=[
-    {body:"#707080",horn:"#40404a",eye:"#a0a0c0",bg:"rgba(0,0,0,0.5)"},      // Лимб серый
-    {body:"#a03070",horn:"#500a30",eye:"#ff90c0",bg:"rgba(0,0,0,0.5)"},      // Похоть розовый
-    {body:"#a08030",horn:"#504010",eye:"#ffd060",bg:"rgba(0,0,0,0.5)"},      // Чревоугодие жёлтый
-    {body:"#908040",horn:"#484010",eye:"#ffe060",bg:"rgba(0,0,0,0.5)"},      // Жадность золотой
-    {body:"#b02020",horn:"#500000",eye:"#ff4040",bg:"rgba(0,0,0,0.5)"},      // Гнев красный
-    {body:"#603080",horn:"#300840",eye:"#c060ff",bg:"rgba(0,0,0,0.5)"},      // Ересь фиолетовый
-    {body:"#1a001a",horn:"#000000",eye:"#ff0000",bg:"rgba(0,0,0,0.7)"}       // Люцифер чёрный
+    {body:"#707080",horn:"#40404a",eye:"#a0a0c0",bg:"rgba(0,0,0,0.5)"},
+    {body:"#a03070",horn:"#500a30",eye:"#ff90c0",bg:"rgba(0,0,0,0.5)"},
+    {body:"#a08030",horn:"#504010",eye:"#ffd060",bg:"rgba(0,0,0,0.5)"},
+    {body:"#908040",horn:"#484010",eye:"#ffe060",bg:"rgba(0,0,0,0.5)"},
+    {body:"#b02020",horn:"#500000",eye:"#ff4040",bg:"rgba(0,0,0,0.5)"},
+    {body:"#603080",horn:"#300840",eye:"#c060ff",bg:"rgba(0,0,0,0.5)"},
+    {body:"#1a001a",horn:"#000000",eye:"#ff0000",bg:"rgba(0,0,0,0.7)"}
   ];
   const p=palettes[circleIdx];
   g.fillStyle=p.bg;g.beginPath();g.ellipse(48,120,34,6,0,0,7);g.fill();
-  // рога — разные формы
   g.fillStyle=p.horn;
   if(circleIdx===0){g.beginPath();g.moveTo(20,20);g.lineTo(12,2);g.lineTo(28,16);g.closePath();g.fill();g.beginPath();g.moveTo(76,20);g.lineTo(84,2);g.lineTo(68,16);g.closePath();g.fill();}
-  else if(circleIdx===1){g.beginPath();g.moveTo(20,20);g.lineTo(8,0);g.lineTo(30,16);g.closePath();g.fill();g.beginPath();g.moveTo(76,20);g.lineTo(88,0);g.lineTo(66,16);g.closePath();g.fill();g.beginPath();g.moveTo(40,15);g.lineTo(35,-2);g.lineTo(48,14);g.closePath();g.fill();g.beginPath();g.moveTo(56,15);g.lineTo(61,-2);g.lineTo(48,14);g.closePath();g.fill();}
   else if(circleIdx===6){g.beginPath();g.moveTo(15,25);g.lineTo(2,-5);g.lineTo(25,20);g.closePath();g.fill();g.beginPath();g.moveTo(81,25);g.lineTo(94,-5);g.lineTo(71,20);g.closePath();g.fill();g.beginPath();g.moveTo(30,15);g.lineTo(20,-10);g.lineTo(38,10);g.closePath();g.fill();g.beginPath();g.moveTo(66,15);g.lineTo(76,-10);g.lineTo(58,10);g.closePath();g.fill();}
   else{g.beginPath();g.moveTo(20,20);g.lineTo(10,0);g.lineTo(30,16);g.closePath();g.fill();g.beginPath();g.moveTo(76,20);g.lineTo(86,0);g.lineTo(66,16);g.closePath();g.fill();}
-  // голова
   g.fillStyle=p.body;g.fillRect(16,12,64,44);
   g.fillStyle=p.horn;g.fillRect(16,12,64,6);
   g.fillStyle=p.eye;g.fillRect(26,26,12,10);g.fillRect(58,26,12,10);
@@ -238,7 +233,6 @@ const SPR_AMMO=makeAmmoSprite();
 const SPR_PISTOL=makePistol();
 const SPR_SHOTGUN=makeShotgun();
 
-// === ЗВУК ===
 let audioCtx=null,masterVolume=0.7,musicVolume=0.5;
 let musicSource=null,currentTrackLoopTimer=null,currentTrackKey=null;
 (function(){try{const v=parseFloat(localStorage.getItem(STORAGE_VOLUME));if(!isNaN(v))masterVolume=clamp(v,0,1);const mv=parseFloat(localStorage.getItem(STORAGE_MUSIC_VOLUME));if(!isNaN(mv))musicVolume=clamp(mv,0,1);}catch(e){}})();
@@ -265,9 +259,8 @@ function playTrackByKey(key,forceRestart){ensureAudio();
   audio.play().then(()=>{musicSource=audio;}).catch(()=>{if(!failed){failed=true;startSynthTrack(key);}});}
 function updateMusicVolume(){if(musicSource)musicSource.volume=musicVolume*masterVolume;}
 
-// === СЛОТЫ ===
 function defaultSlot(name){return{name:name,unlocked:1,unlockedPage2:0,unlockedPage3:[1,0,0,0,0,0,0],bossDefeated:false,hellBossDefeated:false,runes:0,menuTheme:"default",cursorTheme:"default",ownedMenuThemes:["default"],ownedCursorThemes:["default"],musicMenu:"default",musicGame:"default",ownedTracks:["default"]};}
-function loadSlots(){try{const raw=localStorage.getItem(STORAGE_SLOTS);if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length===SLOT_COUNT){return d.map((s,i)=>{const def=defaultSlot("Игрок "+(i+1));const merged=Object.assign(def,s);if(!Array.isArray(merged.unlockedPage3)||merged.unlockedPage3.length!==7){merged.unlockedPage3=[1,0,0,0,0,0,0];}return merged;});}}}catch(e){}const a=[];for(let i=0;i<SLOT_COUNT;i++)a.push(defaultSlot("Игрок "+(i+1)));return a;}
+function loadSlots(){try{const raw=localStorage.getItem(STORAGE_SLOTS);if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length===SLOT_COUNT){return d.map((s,i)=>{const def=defaultSlot("Игрок "+(i+1));const merged=Object.assign(def,s);if(!Array.isArray(merged.unlockedPage3)||merged.unlockedPage3.length!==7){merged.unlockedPage3=[1,0,0,0,0,0,0];}if(merged.unlocked>52)merged.unlocked=52;if(merged.unlockedPage2>31)merged.unlockedPage2=31;return merged;});}}}catch(e){}const a=[];for(let i=0;i<SLOT_COUNT;i++)a.push(defaultSlot("Игрок "+(i+1)));return a;}
 function saveSlots(){try{localStorage.setItem(STORAGE_SLOTS,JSON.stringify(slots));}catch(e){}}
 function loadActiveSlot(){try{const v=parseInt(localStorage.getItem(STORAGE_ACTIVE_SLOT));if(!isNaN(v)&&v>=0&&v<SLOT_COUNT)return v;}catch(e){}return 0;}
 function saveActiveSlot(){try{localStorage.setItem(STORAGE_ACTIVE_SLOT,String(activeSlot));}catch(e){}}
@@ -283,7 +276,6 @@ let renameBuffer="",renameSlotIdx=0;
 const touch={moveTouchId:null,moveStartX:0,moveStartY:0,moveDX:0,moveDY:0,lookTouchId:null,lookLastX:0,fireHeld:false};
 let isTouchDevice=("ontouchstart"in window)||navigator.maxTouchPoints>0;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}}
-
 function circleStats(c){return{enemyHp:150+c*30,enemyDmgMin:35+c*5,enemyDmgMax:45+c*5,bossHp:1500+c*300,bossDmgMin:15+c*3,bossDmgMax:22+c*3,reward:100+c*25,bossReward:600+c*150};}
 
 function loadLevel(idx,page,circle){
@@ -291,19 +283,13 @@ function loadLevel(idx,page,circle){
   let raw;
   if(page===1){if(idx===PAGE1_RAW.length){isBossLevel=true;raw=BOSS_ARENA;}else raw=PAGE1_RAW[idx];}
   else if(page===2){if(idx===PAGE2_RAW.length){isHellBossLevel=true;raw=HELL_BOSS_ARENA;}else raw=PAGE2_RAW[idx];}
-  else if(page===3){
-    currentCircle=circle||0;
-    if(idx===10){isCircleBoss=true;raw=HELL_BOSS_ARENA;}
-    else raw=getCircleLevelMap(currentCircle,idx);
-    isPage3=true;
-  }
+  else if(page===3){currentCircle=circle||0;if(idx===10){isCircleBoss=true;raw=HELL_BOSS_ARENA;}else raw=getCircleLevelMap(currentCircle,idx);isPage3=true;}
   const h=raw.length,w=raw[0].length;grid=[];exitPos=null;
   for(let y=0;y<h;y++){const row=new Int8Array(w);for(let x=0;x<w;x++){const ch=raw[y][x];row[x]=ch==="1"?1:ch==="2"?2:0;if(ch==="2")exitPos={x:x+0.5,y:y+0.5};}grid.push(row);}
   player={x:1.5,y:1.5,angle:0,hp:100,ammo:(isBossLevel||isHellBossLevel||isCircleBoss)?300:50,score:0,weapon:"pistol",anim:0,flash:0,damageIndicators:[]};
   enemies=[];pickups=[];boss=null;bossWaveTimer=0;bossWaveNum=0;
   if(isBossLevel||isHellBossLevel||isCircleBoss){
-    const bx=w/2,by=h/2;
-    let bossHp=800,bossSize=2.2;
+    const bx=w/2,by=h/2;let bossHp=800,bossSize=2.2;
     if(isHellBossLevel)bossHp=1500;
     if(isCircleBoss){const st=circleStats(currentCircle);bossHp=st.bossHp;bossSize=2.2+currentCircle*0.1;}
     boss={x:bx,y:by,hp:bossHp,maxHp:bossHp,timer:1.5,alive:true,isBoss:isBossLevel,isHellBoss:isHellBossLevel,isCircleBoss:isCircleBoss,circle:currentCircle,size:bossSize};
@@ -316,8 +302,7 @@ function loadLevel(idx,page,circle){
   }else{
     const free=[];
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++)if(grid[y][x]===0&&!(x===1&&y===1))free.push({x:x+0.5,y:y+0.5});
-    shuffle(free);
-    const n=Math.min(6+idx,Math.floor(free.length/4));
+    shuffle(free);const n=Math.min(6+idx,Math.floor(free.length/4));
     for(let i=0;i<n;i++){
       if(page===3){const st=circleStats(currentCircle);enemies.push({x:free[i].x,y:free[i].y,hp:st.enemyHp,timer:1.1,alive:true,size:1.3,isHellDemon:true,dmgMin:st.enemyDmgMin,dmgMax:st.enemyDmgMax,circle:currentCircle});}
       else if(page===2)enemies.push({x:free[i].x,y:free[i].y,hp:80,timer:1.2,alive:true,size:1.3,isDemon:true,dmgMin:20,dmgMax:28});
@@ -328,7 +313,6 @@ function loadLevel(idx,page,circle){
   gameOver=false;win=false;
   const s=getSlot();playTrackByKey(s.musicGame||"default",false);
 }
-
 function isWall(x,y){if(x<0||y<0||y>=grid.length||x>=grid[0].length)return true;return grid[y|0][x|0]!==0;}
 function hasLineOfSight(x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1;const d=Math.hypot(dx,dy);if(d<0.001)return true;const s=Math.ceil(d/0.05);for(let i=1;i<s;i++){const t=i/s;if(isWall(x1+dx*t,y1+dy*t))return false;}return true;}
 function tryMove(dx,dy){const nx=player.x+dx,ny=player.y+dy;if(!isWall(nx,player.y))player.x=nx;if(!isWall(player.x,ny))player.y=ny;}
@@ -339,12 +323,7 @@ function updateEnemies(dt){
     if(e.isBoss||e.isHellBoss||e.isCircleBoss){const isHell=e.isHellBoss;const isCirc=e.isCircleBoss;
       if(d>1.5&&d<(isCirc?16:isHell?14:12)){const sp=isCirc?1.2:isHell?1.1:0.8;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}
       e.timer-=dt;
-      if(d<(isCirc?18:isHell?16:14)&&e.timer<=0){
-        e.timer=isCirc?0.4:isHell?0.45:0.7;
-        const sh=isCirc?4:isHell?4:3;
-        const dmMin=isCirc?circleStats(e.circle).bossDmgMin:isHell?12:8;
-        const dmMax=isCirc?circleStats(e.circle).bossDmgMax:isHell?20:14;
-        for(let k=0;k<sh;k++)if(Math.random()<0.75)takeDamage(dmMin+Math.floor(Math.random()*(dmMax-dmMin+1)),e.x,e.y);}}
+      if(d<(isCirc?18:isHell?16:14)&&e.timer<=0){e.timer=isCirc?0.4:isHell?0.45:0.7;const sh=isCirc?4:isHell?4:3;const dmMin=isCirc?circleStats(e.circle).bossDmgMin:isHell?12:8;const dmMax=isCirc?circleStats(e.circle).bossDmgMax:isHell?20:14;for(let k=0;k<sh;k++)if(Math.random()<0.75)takeDamage(dmMin+Math.floor(Math.random()*(dmMax-dmMin+1)),e.x,e.y);}}
     else if(e.isHellDemon){if(d>0.9){const sp=2.6;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.7;if(Math.random()<0.9){const mn=e.dmgMin||30;const mx=e.dmgMax||40;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
     else if(e.isDemon){if(d>0.9){const sp=2.2;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.8;if(Math.random()<0.85){const mn=e.dmgMin||20;const mx=e.dmgMax||28;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
     else{if(vis&&d>1.0&&d<8){const nx=e.x+(dx/d)*1.2*dt,ny=e.y+(dy/d)*1.2*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<6&&e.timer<=0){e.timer=0.9;if(Math.random()<0.6)takeDamage(Math.floor(5+Math.random()*8),e.x,e.y);}}
@@ -352,8 +331,7 @@ function updateEnemies(dt){
   if((isBossLevel||isHellBossLevel||isCircleBoss)&&boss&&boss.alive){bossWaveTimer-=dt;const am=enemies.filter(e=>e.alive&&e.minion).length;if(bossWaveTimer<=0&&am<2){bossWaveNum+=1;bossWaveTimer=6;spawnMinions(isHellBossLevel,isCircleBoss);}}
 }
 function updateDamageIndicators(dt){for(const i of player.damageIndicators)i.t-=dt;player.damageIndicators=player.damageIndicators.filter(i=>i.t>0);}
-function shoot(){
-  if(player.ammo<=0)return;player.ammo-=1;player.anim=1;player.flash=1;playShot(player.weapon);
+function shoot(){if(player.ammo<=0)return;player.ammo-=1;player.anim=1;player.flash=1;playShot(player.weapon);
   const cone=aiming?0.04:0.08,dm=aiming?1.5:1;let best=null,bd=1e9;
   for(const e of enemies){if(!e.alive)continue;const dx=e.x-player.x,dy=e.y-player.y;const d=Math.hypot(dx,dy);let a=Math.atan2(dy,dx)-player.angle;a=((a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
     const hr=(e.isBoss||e.isHellBoss||e.isCircleBoss)?0.12:(e.isDemon||e.isHellDemon)?0.10:0.08;
@@ -374,13 +352,7 @@ function renderWalls(){
   for(let i=0;i<RAYS;i++){const ang=sa+step*i;const ca=Math.cos(ang),sana=Math.sin(ang);let hit=false;
     for(let d=0.05;d<MAX_DEPTH;d+=0.02){const tx=player.x+ca*d,ty=player.y+sana*d;if(tx<0||ty<0||tx>=gw||ty>=gh)break;const cell=grid[ty|0][tx|0];if(cell===0)continue;
       const dd=d*Math.cos(ang-player.angle);const dep=Math.max(dd,0.001);const colH=Math.min(VH/dep,VH*3);const y0=(VH>>1)-colH/2;
-      let tex;
-      if(cell===2)tex=TEX_EXIT;
-      else if(isPage3)tex=TEX_CIRCLE[currentCircle];
-      else if(isHellBossLevel||isCircleBoss)tex=TEX_HELL_WALL;
-      else if(isBossLevel)tex=TEX_BOSS_WALL;
-      else if(isPage2)tex=TEX_DEMON_WALL;
-      else tex=TEX_WALL;
+      let tex;if(cell===2)tex=TEX_EXIT;else if(isPage3)tex=TEX_CIRCLE[currentCircle];else if(isHellBossLevel||isCircleBoss)tex=TEX_HELL_WALL;else if(isBossLevel)tex=TEX_BOSS_WALL;else if(isPage2)tex=TEX_DEMON_WALL;else tex=TEX_WALL;
       const fx=tx-Math.floor(tx),fy=ty-Math.floor(ty);let txX;if(Math.min(fx,1-fx)<Math.min(fy,1-fy))txX=ca<0?(fx*64)|0:((1-fx)*64)|0;else txX=sana<0?(fy*64)|0:((1-fy)*64)|0;txX=clamp(txX,0,63);
       const shade=Math.max(0.25,1-dep/MAX_DEPTH);drawTexturedColumn(i*(VW/RAYS),Math.max(0,y0),colW,colH,tex,txX,shade);zbuffer[i]=dep;hit=true;break;}
     if(!hit)zbuffer[i]=MAX_DEPTH;}
@@ -388,21 +360,12 @@ function renderWalls(){
 function drawTexturedColumn(x,y,w,h,tex,txX,shade){let dY=y,dH=h,sY0=0,sY1=tex.size;if(dY<0){const cut=-dY;sY0=(cut/h)*tex.size;dH-=cut;dY=0;}if(dY+dH>VH){const cut=dY+dH-VH;sY1=tex.size-(cut/h)*tex.size;dH-=cut;}if(dH<=0)return;const strip=getStrip(tex,txX);ctx.drawImage(strip,0,sY0,1,Math.max(1,sY1-sY0),x,dY,w,dH);if(shade<1){ctx.fillStyle="rgba(0,0,0,"+(1-shade)+")";ctx.fillRect(x,dY,w,dH);}}
 const stripCache=new WeakMap();
 function getStrip(tex,txX){let arr=stripCache.get(tex);if(!arr){arr=new Array(tex.size);stripCache.set(tex,arr);}if(arr[txX])return arr[txX];const c=makeCanvas(1,tex.size);const g=c.getContext("2d");const img=g.createImageData(1,tex.size);for(let y=0;y<tex.size;y++){const si=(y*tex.size+txX)*3,di=y*4;img.data[di]=tex.data[si];img.data[di+1]=tex.data[si+1];img.data[di+2]=tex.data[si+2];img.data[di+3]=255;}g.putImageData(img,0,0);arr[txX]=c;return c;}
-function renderSprites(){
-  const list=[];
-  for(const e of enemies){if(!e.alive)continue;let spr;
-    if(e.isCircleBoss)spr=SPR_CIRCLE_BOSS[e.circle];
-    else if(e.isHellBoss)spr=SPR_HELL_BOSS;
-    else if(e.isBoss)spr=SPR_BOSS;
-    else if(e.isHellDemon)spr=SPR_DEMON;
-    else if(e.isDemon)spr=SPR_DEMON;
-    else spr=SPR_ENEMY;
-    list.push({x:e.x,y:e.y,spr:spr,size:e.size||1.0});}
+function renderSprites(){const list=[];
+  for(const e of enemies){if(!e.alive)continue;let spr;if(e.isCircleBoss)spr=SPR_CIRCLE_BOSS[e.circle];else if(e.isHellBoss)spr=SPR_HELL_BOSS;else if(e.isBoss)spr=SPR_BOSS;else if(e.isHellDemon)spr=SPR_DEMON;else if(e.isDemon)spr=SPR_DEMON;else spr=SPR_ENEMY;list.push({x:e.x,y:e.y,spr:spr,size:e.size||1.0});}
   for(const p of pickups)list.push({x:p.x,y:p.y,spr:p.kind==="medkit"?SPR_MEDKIT:SPR_AMMO,size:1.0});
   list.sort((a,b)=>{const da=Math.hypot(a.x-player.x,a.y-player.y),db=Math.hypot(b.x-player.x,b.y-player.y);return db-da;});
   for(const s of list){const dx=s.x-player.x,dy=s.y-player.y;const d=Math.hypot(dx,dy);if(d<0.3)continue;let a=Math.atan2(dy,dx)-player.angle;a=((a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;if(Math.abs(a)>HALF_FOV+0.3)continue;
-    const sx=(0.5+a/FOV)*VW;const size=Math.min(VH/d,VH*2)*(s.size||1);const col=clamp(Math.floor(sx/VW*RAYS),0,RAYS-1);if(d>zbuffer[col])continue;const y=VH/2+size/4-size/2;ctx.drawImage(s.spr,sx-size/2,y,size,size);}
-}
+    const sx=(0.5+a/FOV)*VW;const size=Math.min(VH/d,VH*2)*(s.size||1);const col=clamp(Math.floor(sx/VW*RAYS),0,RAYS-1);if(d>zbuffer[col])continue;const y=VH/2+size/4-size/2;ctx.drawImage(s.spr,sx-size/2,y,size,size);}}
 function renderWeapon(){const spr=player.weapon==="pistol"?SPR_PISTOL:SPR_SHOTGUN;const w=spr.width,h=spr.height;let cy;if(aiming)cy=VH-h/2-30;else cy=VH-h/2+90+player.anim*40;const cx=VW/2;if(player.flash>0){ctx.save();ctx.globalAlpha=0.5*player.flash;ctx.globalCompositeOperation="lighter";ctx.fillStyle="rgb(255,220,100)";ctx.fillRect(cx-w/2,cy-h/2,w,h);ctx.restore();}ctx.drawImage(spr,cx-w/2,cy-h/2);}
 function renderCrosshair(){const cx=VW/2,cy=VH/2;const gap=aiming?6:10;const len=aiming?10:8;ctx.strokeStyle=aiming?"#00ff50":"#e6e6e6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-gap-len,cy);ctx.lineTo(cx-gap,cy);ctx.moveTo(cx+gap,cy);ctx.lineTo(cx+gap+len,cy);ctx.moveTo(cx,cy-gap-len);ctx.lineTo(cx,cy-gap);ctx.moveTo(cx,cy+gap);ctx.lineTo(cx,cy+gap+len);ctx.stroke();ctx.fillStyle=aiming?"#00ff50":"#e6e6e6";ctx.beginPath();ctx.arc(cx,cy,1.5,0,7);ctx.fill();}
 function renderDamageIndicators(){const cx=VW/2,cy=VH/2;for(const ind of player.damageIndicators){const alpha=Math.min(1,ind.t/DAMAGE_INDICATOR_LIFETIME)*0.8;const rIn=Math.min(VW,VH)*0.28,rOut=Math.min(VW,VH)*0.60;const sp=0.45;const au=-Math.PI/2+ind.rel;ctx.beginPath();ctx.moveTo(cx+rIn*Math.cos(au-sp),cy+rIn*Math.sin(au-sp));ctx.lineTo(cx+rOut*Math.cos(au-sp/2),cy+rOut*Math.sin(au-sp/2));ctx.lineTo(cx+rOut*Math.cos(au+sp/2),cy+rOut*Math.sin(au+sp/2));ctx.lineTo(cx+rIn*Math.cos(au+sp),cy+rIn*Math.sin(au+sp));ctx.closePath();ctx.fillStyle="rgba(255,30,30,"+alpha+")";ctx.fill();}}
@@ -431,9 +394,45 @@ function renderHud(){
   const tw=ctx.measureText(title).width;ctx.fillText(title,VW/2-tw/2,55);
 }
 
-// Фоны меню
-const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*VW,y:Math.random()*VH,r:Math.random()<0.75?1:2,speed:8+Math.random()*37,alpha:60+Math.random()*140,color:["#c8dcff","#ffe6c8","#dcc8ff","#ffffff"][(Math.random()*4)|0],phase:Math.random()*6.28});
-function drawMenuBg(dt){const grad=ctx.createRadialGradient(VW/2,VH/2,0,VW/2,VH/2,Math.max(VW,VH)/2);grad.addColorStop(0,"#231f3c");grad.addColorStop(1,"#050508");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);for(const s of stars){s.y+=s.speed*dt;if(s.y>VH){s.y=-2;s.x=Math.random()*VW;}const f=0.8+0.2*Math.sin(menuTime*3+s.phase);ctx.globalAlpha=(s.alpha/255)*f;ctx.fillStyle=s.color;if(s.r===1)ctx.fillRect(s.x,s.y,1,1);else{ctx.fillRect(s.x-1,s.y-1,3,3);ctx.fillRect(s.x-3,s.y,7,1);ctx.fillRect(s.x,s.y-3,1,7);}}ctx.globalAlpha=1;}
+// ИСПРАВЛЕНО: drawMenuBg теперь с полной поддержкой всех тем
+function drawMenuBg(dt){
+  const slot=getSlot();const theme=slot.menuTheme||"default";
+  if(theme==="matrix"){
+    ctx.fillStyle="#000";ctx.fillRect(0,0,VW,VH);ctx.font="16px Consolas, monospace";
+    for(const c of matrixCols){c.y+=c.speed*dt;if(c.y>VH+20){c.y=-20;c.x=Math.random()*VW;}ctx.fillStyle="rgba(0,255,80,0.7)";ctx.fillText(c.char,c.x,c.y);if(Math.random()<0.02)c.char=String.fromCharCode(0x30A0+Math.floor(Math.random()*96));}
+  }else if(theme==="hell"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#1a0505");grad.addColorStop(0.6,"#3a0808");grad.addColorStop(1,"#6a1500");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(let i=0;i<12;i++){const y=VH-40+Math.sin(menuTime*0.8+i)*8;ctx.fillStyle="rgba(255,"+(60+i*8)+",0,0.4)";ctx.fillRect(0,y,VW,3);}
+  }else if(theme==="aurora"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#02101a");grad.addColorStop(1,"#001a1a");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(let i=0;i<5;i++){const y=VH*0.3+Math.sin(menuTime*0.5+i*0.8)*100;const g2=ctx.createLinearGradient(0,y-60,0,y+60);g2.addColorStop(0,"rgba(0,0,0,0)");g2.addColorStop(0.5,"rgba(0,"+(150+i*20)+","+(200-i*30)+",0.25)");g2.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=g2;ctx.fillRect(0,y-60,VW,120);}
+  }else if(theme==="blood"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#1a0000");grad.addColorStop(0.5,"#2a0000");grad.addColorStop(1,"#4a0808");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(const d of bloodDrops){d.y+=d.speed*dt;if(d.y>VH+30){d.y=-30;d.x=Math.random()*VW;}ctx.fillStyle="rgba(150,0,0,0.6)";ctx.fillRect(d.x,d.y,2,d.len);}
+    const vg=ctx.createRadialGradient(VW/2,VH/2,VH*0.3,VW/2,VH/2,Math.max(VW,VH)*0.7);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(80,0,0,0.7)");ctx.fillStyle=vg;ctx.fillRect(0,0,VW,VH);
+  }else if(theme==="ice"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#0a1a2a");grad.addColorStop(0.5,"#1a3a5a");grad.addColorStop(1,"#0a2038");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    ctx.fillStyle="rgba(200,230,255,0.8)";for(const s of snowflakes){s.y+=s.speed*dt;if(s.y>VH+5){s.y=-5;s.x=Math.random()*VW;}ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();}
+  }else if(theme==="desert"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#3a2a1a");grad.addColorStop(0.5,"#8a5a2a");grad.addColorStop(1,"#c08840");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(let i=0;i<3;i++){const y=VH*0.5+i*4+Math.sin(menuTime*2+i)*3;ctx.fillStyle="rgba(255,200,120,0.3)";ctx.fillRect(0,y,VW,2);}
+  }else if(theme==="cyber"){
+    ctx.fillStyle="#0a001a";ctx.fillRect(0,0,VW,VH);
+    for(const l of cyberLines){l.y+=l.speed*dt;if(l.y>VH+10){l.y=-10;l.color=["#ff00aa","#00ffee","#aa00ff","#ffcc00"][(Math.random()*4)|0];}ctx.fillStyle=l.color;ctx.globalAlpha=0.4;ctx.fillRect(0,l.y,VW,2);ctx.globalAlpha=1;}
+    ctx.strokeStyle="rgba(255,0,170,0.15)";ctx.lineWidth=1;for(let x=0;x<VW;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,VH);ctx.stroke();}
+  }else if(theme==="volcano"){
+    ctx.fillStyle="#0a0505";ctx.fillRect(0,0,VW,VH);
+    for(const s of fireSparks){s.y-=s.speed*dt;if(s.y<-10){s.y=VH+10;s.x=Math.random()*VW;}ctx.fillStyle="rgba(255,"+Math.floor(100+Math.random()*100)+",0,"+(0.4+Math.random()*0.4)+")";ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,7);ctx.fill();}
+    const grad=ctx.createLinearGradient(0,VH*0.7,0,VH);grad.addColorStop(0,"rgba(255,80,0,0)");grad.addColorStop(1,"rgba(255,80,0,0.4)");ctx.fillStyle=grad;ctx.fillRect(0,VH*0.7,VW,VH*0.3);
+  }else if(theme==="curse"){
+    const grad=ctx.createLinearGradient(0,0,0,VH);grad.addColorStop(0,"#0a1a0a");grad.addColorStop(0.5,"#152015");grad.addColorStop(1,"#0a1a0a");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(let i=0;i<5;i++){const y=VH*0.5+Math.sin(menuTime*0.4+i)*100;const g2=ctx.createRadialGradient(VW*(i/5),y,0,VW*(i/5),y,200);g2.addColorStop(0,"rgba(60,120,60,0.15)");g2.addColorStop(1,"rgba(60,120,60,0)");ctx.fillStyle=g2;ctx.fillRect(0,y-200,VW,400);}
+    ctx.fillStyle="rgba(150,200,150,0.3)";ctx.font="24px Consolas, monospace";for(let i=0;i<8;i++){const x=(i*137+Math.sin(menuTime+i)*50)%VW;const y=(i*89+Math.cos(menuTime*0.7+i)*80)%VH;ctx.fillText("☠",x,y);}
+  }else{
+    const grad=ctx.createRadialGradient(VW/2,VH/2,0,VW/2,VH/2,Math.max(VW,VH)/2);grad.addColorStop(0,"#231f3c");grad.addColorStop(1,"#050508");ctx.fillStyle=grad;ctx.fillRect(0,0,VW,VH);
+    for(const s of stars){s.y+=s.speed*dt;if(s.y>VH){s.y=-2;s.x=Math.random()*VW;}const f=0.8+0.2*Math.sin(menuTime*3+s.phase);ctx.globalAlpha=(s.alpha/255)*f;ctx.fillStyle=s.color;if(s.r===1)ctx.fillRect(s.x,s.y,1,1);else{ctx.fillRect(s.x-1,s.y-1,3,3);ctx.fillRect(s.x-3,s.y,7,1);ctx.fillRect(s.x,s.y-3,1,7);}}ctx.globalAlpha=1;
+  }
+}
 function drawTitle(){const text="PYTHON DOOM";const cx=VW/2;ctx.font="bold 64px Consolas, monospace";const w=ctx.measureText(text).width;ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillText(text,cx-w/2+4,130+4);ctx.fillStyle="#dc2828";ctx.fillText(text,cx-w/2,130);const pulse=0.5+0.5*Math.sin(menuTime*2);ctx.fillStyle="rgba(255,180,60,"+(0.35+0.65*pulse)+")";ctx.fillText(text,cx-w/2,130);}
 function drawCrossLines(x,y,gap,len){ctx.beginPath();ctx.moveTo(x-gap-len,y);ctx.lineTo(x-gap,y);ctx.moveTo(x+gap,y);ctx.lineTo(x+gap+len,y);ctx.moveTo(x,y-gap-len);ctx.lineTo(x,y-gap);ctx.moveTo(x,y+gap);ctx.lineTo(x,y+gap+len);ctx.stroke();}
 function drawCursor(now){if(state===GAME_STATE.PLAYING)return;const x=mouseX,y=mouseY;const pulse=0.5+0.5*Math.sin(now*0.005);const theme=(getSlot().cursorTheme)||"default";
@@ -461,13 +460,12 @@ function drawSlotScreen(dt){drawMenuBg(dt);ctx.fillStyle="#dcc850";ctx.font="bol
 }
 function drawRenameScreen(dt){drawMenuBg(dt*0.3);ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(0,0,VW,VH);const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;ctx.fillStyle="#232838";roundRect(x,y,w,h,14);ctx.fill();ctx.strokeStyle="#4a90d0";ctx.lineWidth=2;roundRect(x,y,w,h,14);ctx.stroke();ctx.fillStyle="#dcc850";ctx.font="bold 26px Consolas, monospace";ctx.fillText("ПЕРЕИМЕНОВАТЬ СЛОТ "+(renameSlotIdx+1),x+30,y+50);ctx.fillStyle="#e6e6f0";ctx.font="20px Consolas, monospace";ctx.fillText("Имя:",x+30,y+110);ctx.fillStyle="#1a1a26";roundRect(x+90,y+90,470,36,6);ctx.fill();ctx.strokeStyle="#4a90d0";ctx.lineWidth=2;roundRect(x+90,y+90,470,36,6);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 20px Consolas, monospace";ctx.fillText(renameBuffer+(Math.floor(menuTime*2)%2?"|":""),x+105,y+116);const saveX=x+30,saveY=y+h-60,bw=200,bh=45;const cancelX=x+w-230;ctx.fillStyle="#1c4028";roundRect(saveX,saveY,bw,bh,8);ctx.fill();ctx.strokeStyle="#3cdc78";ctx.lineWidth=2;roundRect(saveX,saveY,bw,bh,8);ctx.stroke();ctx.fillStyle="#e0ffe0";ctx.font="bold 18px Consolas, monospace";let t="СОХРАНИТЬ";ctx.fillText(t,saveX+bw/2-ctx.measureText(t).width/2,saveY+bh/2+6);ctx.fillStyle="#402028";roundRect(cancelX,saveY,bw,bh,8);ctx.fill();ctx.strokeStyle="#c83030";ctx.lineWidth=2;roundRect(cancelX,saveY,bw,bh,8);ctx.stroke();ctx.fillStyle="#ffe0e0";t="ОТМЕНА";ctx.fillText(t,cancelX+bw/2-ctx.measureText(t).width/2,saveY+bh/2+6);}
 
-// Выбор уровня с 3 страницами и 7 вкладками-кругами
 let levelButtons=[],levelScroll=0,levelScrollMax=0;
 function rebuildLevelButtons(){
   levelButtons=[];const cols=5,bw=150,bh=78,gapX=15,gapY=15;const gridW=cols*bw+(cols-1)*gapX;const startX=VW/2-gridW/2;const topMargin=currentPage===3?240:195,bottomMargin=90;const viewH=VH-topMargin-bottomMargin;const slot=getSlot();let total;
   if(currentPage===1)total=PAGE1_RAW.length+1;
   else if(currentPage===2)total=PAGE2_RAW.length+1;
-  else total=11; // 10 + босс
+  else total=11;
   const rows=Math.ceil(total/cols);const totalH=rows*bh+(rows-1)*gapY;levelScrollMax=Math.max(0,totalH-viewH);levelScroll=Math.min(levelScroll,levelScrollMax);
   for(let i=0;i<total;i++){const col=i%cols,row=(i/cols)|0;let enabled;let isBoss=false,isHellBoss=false,isCircleBoss=false;
     if(currentPage===1){enabled=i<slot.unlocked;isBoss=(i===PAGE1_RAW.length);}
@@ -483,28 +481,10 @@ function drawLevelsScreen(dt){
   drawTab(tx1,1,"СТРАНИЦА 1 — 51+БОСС",false,"#7eaaff");
   drawTab(tx2,2,"ПРЕИСПОДНЯЯ — 30+БОСС",!slot.bossDefeated,"#c060ff");
   drawTab(tx3,3,"7 КРУГОВ АДА",!slot.hellBossDefeated,"#ff6020");
-  // Для страницы 3 — 7 вкладок кругов
   const ty2=130;
   if(currentPage===3){
-    const c3=slot.unlockedPage3||[1,0,0,0,0,0,0];
-    const circW=110,circH=34,gap=8;
-    const startX=VW/2-(7*circW+6*gap)/2;
-    for(let c=0;c<7;c++){
-      const x=startX+c*(circW+gap);
-      const locked=c3[c]===0;
-      const active=currentCircle===c;
-      const h=mouseX>=x&&mouseX<=x+circW&&mouseY>=ty2&&mouseY<=ty2+circH;
-      const col=HELL_CIRCLE_COLORS[c];
-      const colStr="rgb("+col.wall.join(",")+")";
-      const bg=active?colStr+"80":(h&&!locked?"#2c3640":"#1e2430");
-      const bord=locked?"#3a3a3a":(active?colStr:"#506478");
-      ctx.fillStyle=bg;roundRect(x,ty2,circW,circH,6);ctx.fill();
-      ctx.strokeStyle=bord;ctx.lineWidth=active?3:2;roundRect(x,ty2,circW,circH,6);ctx.stroke();
-      ctx.fillStyle=locked?"#5a5a60":(active?"#fff":"#c8c8e0");
-      ctx.font="bold 13px Consolas, monospace";
-      const label=locked?"🔒 "+HELL_CIRCLE_NAMES[c].split(" — ")[0]:HELL_CIRCLE_NAMES[c].split(" — ")[0];
-      ctx.fillText(label,x+circW/2-ctx.measureText(label).width/2,ty2+22);
-    }
+    const c3=slot.unlockedPage3||[1,0,0,0,0,0,0];const circW=110,circH=34,gap=8;const startX=VW/2-(7*circW+6*gap)/2;
+    for(let c=0;c<7;c++){const x=startX+c*(circW+gap);const locked=c3[c]===0;const active=currentCircle===c;const h=mouseX>=x&&mouseX<=x+circW&&mouseY>=ty2&&mouseY<=ty2+circH;const col=HELL_CIRCLE_COLORS[c];const colStr="rgb("+col.wall.join(",")+")";const bg=active?colStr+"80":(h&&!locked?"#2c3640":"#1e2430");const bord=locked?"#3a3a3a":(active?colStr:"#506478");ctx.fillStyle=bg;roundRect(x,ty2,circW,circH,6);ctx.fill();ctx.strokeStyle=bord;ctx.lineWidth=active?3:2;roundRect(x,ty2,circW,circH,6);ctx.stroke();ctx.fillStyle=locked?"#5a5a60":(active?"#fff":"#c8c8e0");ctx.font="bold 13px Consolas, monospace";const label=locked?"🔒 "+HELL_CIRCLE_NAMES[c].split(" — ")[0]:HELL_CIRCLE_NAMES[c].split(" — ")[0];ctx.fillText(label,x+circW/2-ctx.measureText(label).width/2,ty2+22);}
   }
   const topMargin=currentPage===3?240:195,bottomMargin=90;const viewH=VH-topMargin-bottomMargin;
   ctx.save();ctx.beginPath();ctx.rect(0,topMargin-5,VW,viewH+10);ctx.clip();
@@ -538,7 +518,6 @@ function drawLevelsScreen(dt){
 let backHover=0;
 function drawBackButton(){const x=30,y=VH-70,w=180,h=45;const h2=mouseX>=x&&mouseX<=x+w&&mouseY>=y&&mouseY<=y+h;backHover+=((h2?1:0)-backHover)*0.15;ctx.fillStyle=h2?"#3c4660":"#28303c";roundRect(x,y,w,h,8);ctx.fill();ctx.strokeStyle=h2?"#7eaaff":"#506478";ctx.lineWidth=2;roundRect(x,y,w,h,8);ctx.stroke();ctx.fillStyle="#dcdcff";ctx.font="bold 20px Consolas, monospace";const t="← НАЗАД";ctx.fillText(t,x+w/2-ctx.measureText(t).width/2,y+h/2+7);}
 
-// Магазин (упрощённый)
 let shopButtons=[],shopTab="menu";
 function rebuildShopButtons(){shopButtons=[];
   if(shopTab==="menu"||shopTab==="cursor"){const themes=THEMES[shopTab];const keys=Object.keys(themes);const cardW=200,cardH=120,gap=15;const cols=5;const startX=(VW-(cols*cardW+(cols-1)*gap))/2;const startY=200;keys.forEach((k,i)=>{const col=i%cols,row=(i/cols)|0;shopButtons.push({kind:shopTab,key:k,x:startX+col*(cardW+gap),y:startY+row*(cardH+gap),w:cardW,h:cardH,hover:0,appear:1});});}
@@ -591,35 +570,16 @@ function drawConfirmDialog(dt){
   ctx.fillStyle="rgb("+Math.round(40+confirmHoverNo*25)+","+Math.round(50+confirmHoverNo*30)+",70)";roundRect(noX,by,bw,bh,10);ctx.fill();ctx.strokeStyle="rgb("+Math.round(90+confirmHoverNo*60)+","+Math.round(120+confirmHoverNo*60)+",180)";ctx.lineWidth=2;roundRect(noX,by,bw,bh,10);ctx.stroke();ctx.fillStyle="#e6e6ff";t="ОТМЕНА";ctx.fillText(t,noX+bw/2-ctx.measureText(t).width/2,by+bh/2+7);
 }
 
-function rewardRunesForLevel(page,idx,isBoss,isHellBoss,circle){
-  const s=getSlot();
-  if(isHellBoss){s.runes+=500;return;}
-  if(isBoss){s.runes+=300;return;}
-  if(page===3){const st=circleStats(circle);s.runes+=st.reward;return;}
-  if(page===2){s.runes+=30;return;}
-  s.runes+=15;
-}
+function rewardRunesForLevel(page,idx,isBoss,isHellBoss,circle){const s=getSlot();if(isHellBoss){s.runes+=500;return;}if(isBoss){s.runes+=300;return;}if(page===3){const st=circleStats(circle);s.runes+=st.reward;return;}if(page===2){s.runes+=30;return;}s.runes+=15;}
 
-// АВТО-ПЕРЕХОД между кругами
 function advanceAfterWin(){
   const s=getSlot();
-  // Босс Преисподней (стр.2)
-  if(isHellBossLevel){
-    if(!s.hellBossDefeated){s.hellBossDefeated=true;if(!s.unlockedPage3)s.unlockedPage3=[1,0,0,0,0,0,0];s.unlockedPage3[0]=1;rewardRunesForLevel(2,levelIdx,false,true,0);}
-    saveSlots();exitToMenu();return;
-  }
-  // Обычный босс (стр.1)
-  if(isBossLevel){
-    if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false,0);}
-    saveSlots();exitToMenu();return;
-  }
-  // 7 кругов
+  if(isHellBossLevel){if(!s.hellBossDefeated){s.hellBossDefeated=true;if(!s.unlockedPage3)s.unlockedPage3=[1,0,0,0,0,0,0];s.unlockedPage3[0]=1;rewardRunesForLevel(2,levelIdx,false,true,0);}saveSlots();exitToMenu();return;}
+  if(isBossLevel){if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false,0);}saveSlots();exitToMenu();return;}
   if(isPage3){
     rewardRunesForLevel(3,levelIdx,false,false,currentCircle);
     if(isCircleBoss){
-      // Победа над боссом круга
       if(currentCircle<6){
-        // Открываем следующий круг и АВТО-переход на 1-й уровень
         if(s.unlockedPage3[currentCircle+1]===0)s.unlockedPage3[currentCircle+1]=1;
         saveSlots();
         currentCircle=currentCircle+1;
@@ -627,12 +587,8 @@ function advanceAfterWin(){
         levelIdx=0;
         loadLevel(0,3,currentCircle);
         return;
-      }else{
-        // Победа над Люцифером — игра пройдена
-        saveSlots();exitToMenu();return;
-      }
+      }else{saveSlots();exitToMenu();return;}
     }
-    // Обычный уровень круга
     if(levelIdx+1<=10){
       if(s.unlockedPage3[currentCircle]<levelIdx+2)s.unlockedPage3[currentCircle]=levelIdx+2;
       saveSlots();
@@ -642,22 +598,15 @@ function advanceAfterWin(){
     }
     return;
   }
-  // Страница 2 — демоны
   if(isPage2){
     rewardRunesForLevel(2,levelIdx,false,false,0);
-    if(levelIdx+1>=PAGE2_RAW.length){
-      // Загружаем босса Преисподней
-      levelIdx=PAGE2_RAW.length;
-      loadLevel(levelIdx,2);
-      return;
-    }
+    if(levelIdx+1>=PAGE2_RAW.length){levelIdx=PAGE2_RAW.length;loadLevel(levelIdx,2);return;}
     if(s.unlockedPage2<levelIdx+2)s.unlockedPage2=levelIdx+2;
     saveSlots();
     levelIdx=levelIdx+1;
     loadLevel(levelIdx,2);
     return;
   }
-  // Страница 1 — обычные
   rewardRunesForLevel(1,levelIdx,false,false,0);
   if(levelIdx+1>s.unlocked){s.unlocked=levelIdx+2;if(s.unlocked>PAGE1_RAW.length+1)s.unlocked=PAGE1_RAW.length+1;}
   saveSlots();
@@ -699,7 +648,7 @@ function render(dt){
     const sub="Игрок: "+act.name+"  |  Руны: "+act.runes+"  |  Стр1: "+Math.max(0,act.unlocked-1)+"/52"+"  |  Стр2: "+act.unlockedPage2+"/31"+"  |  Стр3: "+total3+"/77";
     ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,158);drawMenuButtons();
     ctx.fillStyle="#8c8c9c";ctx.font="14px Consolas, monospace";const hint="ESC — выход   |   слот "+(activeSlot+1)+" / "+SLOT_COUNT;ctx.fillText(hint,VW/2-ctx.measureText(hint).width/2,VH-35);
-    ctx.fillStyle="#64647c";ctx.fillText("v8.0-js",VW-80,VH-15);
+    ctx.fillStyle="#64647c";ctx.fillText("v8.1-js",VW-80,VH-15);
   }else if(state===GAME_STATE.SLOTS)drawSlotScreen(dt);
   else if(state===GAME_STATE.RENAME)drawRenameScreen(dt);
   else if(state===GAME_STATE.LEVELS)drawLevelsScreen(dt);
@@ -799,19 +748,7 @@ function handleMenuClick(mx,my){
     if(mx>=tx1&&mx<=tx1+tabW&&my>=ty&&my<=ty+tabH){currentPage=1;levelScroll=0;rebuildLevelButtons();return;}
     if(mx>=tx2&&mx<=tx2+tabW&&my>=ty&&my<=ty+tabH){if(slot.bossDefeated){currentPage=2;levelScroll=0;rebuildLevelButtons();}return;}
     if(mx>=tx3&&mx<=tx3+tabW&&my>=ty&&my<=ty+tabH){if(slot.hellBossDefeated){currentPage=3;levelScroll=0;rebuildLevelButtons();}return;}
-    // Вкладки кругов для стр.3
-    if(currentPage===3){
-      const c3=slot.unlockedPage3||[1,0,0,0,0,0,0];
-      const circW=110,circH=34,gap=8;const ty2=130;
-      const startX=VW/2-(7*circW+6*gap)/2;
-      for(let c=0;c<7;c++){
-        const x=startX+c*(circW+gap);
-        if(mx>=x&&mx<=x+circW&&my>=ty2&&my<=ty2+circH){
-          if(c3[c]>0){currentCircle=c;levelScroll=0;rebuildLevelButtons();}
-          return;
-        }
-      }
-    }
+    if(currentPage===3){const c3=slot.unlockedPage3||[1,0,0,0,0,0,0];const circW=110,circH=34,gap=8;const ty2=130;const startX=VW/2-(7*circW+6*gap)/2;for(let c=0;c<7;c++){const x=startX+c*(circW+gap);if(mx>=x&&mx<=x+circW&&my>=ty2&&my<=ty2+circH){if(c3[c]>0){currentCircle=c;levelScroll=0;rebuildLevelButtons();}return;}}}
     const topMargin=currentPage===3?240:195,bottomMargin=90;if(my<topMargin-5||my>VH-bottomMargin+5)return;
     for(const b of levelButtons){const vy=b.y-levelScroll;if(mx>=b.x&&mx<=b.x+b.w&&my>=vy&&my<=vy+b.h){if(b.enabled){levelIdx=b.idx;loadLevel(levelIdx,b.page,b.circle);state=GAME_STATE.PLAYING;if(!isTouchDevice)setTimeout(()=>canvas.requestPointerLock(),50);}return;}}
   }else if(state===GAME_STATE.SHOP){
@@ -822,17 +759,9 @@ function handleMenuClick(mx,my){
     for(const b of shopButtons){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){
       const item=b.kind==="music"?TRACKS[b.key]:THEMES[b.kind][b.key];const slot=getSlot();
       if(b.kind==="music"){const owned=slot.ownedTracks.includes(b.key);
-        if(owned){const im=slot.musicMenu===b.key,ig=slot.musicGame===b.key;
-          if(im&&ig){slot.musicMenu="default";slot.musicGame="default";}
-          else if(im){slot.musicMenu="default";slot.musicGame=b.key;}
-          else if(ig){slot.musicMenu=b.key;slot.musicGame="default";}
-          else{slot.musicMenu=b.key;slot.musicGame=b.key;}
-          saveSlots();playTrackByKey(slot.musicMenu||"default",true);
-        }else if(slot.runes>=item.price){slot.runes-=item.price;slot.ownedTracks.push(b.key);slot.musicMenu=b.key;slot.musicGame=b.key;saveSlots();playTrackByKey(b.key,true);}
-      }else{const arr=b.kind==="menu"?slot.ownedMenuThemes:slot.ownedCursorThemes;
-        if(arr.includes(b.key)){if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}
-        else if(slot.runes>=item.price){slot.runes-=item.price;arr.push(b.key);if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}
-      }
+        if(owned){const im=slot.musicMenu===b.key,ig=slot.musicGame===b.key;if(im&&ig){slot.musicMenu="default";slot.musicGame="default";}else if(im){slot.musicMenu="default";slot.musicGame=b.key;}else if(ig){slot.musicMenu=b.key;slot.musicGame="default";}else{slot.musicMenu=b.key;slot.musicGame=b.key;}saveSlots();playTrackByKey(slot.musicMenu||"default",true);}
+        else if(slot.runes>=item.price){slot.runes-=item.price;slot.ownedTracks.push(b.key);slot.musicMenu=b.key;slot.musicGame=b.key;saveSlots();playTrackByKey(b.key,true);}
+      }else{const arr=b.kind==="menu"?slot.ownedMenuThemes:slot.ownedCursorThemes;if(arr.includes(b.key)){if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}else if(slot.runes>=item.price){slot.runes-=item.price;arr.push(b.key);if(b.kind==="menu")slot.menuTheme=b.key;else slot.cursorTheme=b.key;saveSlots();}}
       return;
     }}
     if(mx>=30&&mx<=210&&my>=VH-70&&my<=VH-25){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}
@@ -840,19 +769,10 @@ function handleMenuClick(mx,my){
   else if(state===GAME_STATE.CONFIRM_RESET){const w=600,h=240;const x=(VW-w)/2,y=(VH-h)/2;const yesX=x+40,noX=x+w-260,by=y+h-70,bw=220,bh=50;if(mx>=yesX&&mx<=yesX+bw&&my>=by&&my<=by+bh){if(confirmCallback)confirmCallback();confirmCallback=null;}else if(mx>=noX&&mx<=noX+bw&&my>=by&&my<=by+bh){confirmCallback=null;state=GAME_STATE.SLOTS;rebuildSlotButtons();}}
 }
 function doMenuAction(action){
-  if(action==="play"){const s=getSlot();
-    // Определяем, какой уровень продолжать
-    const c3=s.unlockedPage3||[1,0,0,0,0,0,0];
-    // Находим последний незавершённый круг
-    let lastCircle=-1;
-    for(let c=6;c>=0;c--){if(c3[c]>0){lastCircle=c;break;}}
-    if(lastCircle>=0&&c3[lastCircle]>0&&c3[lastCircle]<=11){
-      currentPage=3;currentCircle=lastCircle;
-      levelIdx=Math.max(0,Math.min(c3[lastCircle]-1,10));
-      loadLevel(levelIdx,3,currentCircle);
-    }else if(s.hellBossDefeated){
-      currentPage=3;currentCircle=0;levelIdx=0;loadLevel(0,3,0);
-    }else if(s.bossDefeated&&s.unlockedPage2>0){currentPage=2;levelIdx=Math.max(0,s.unlockedPage2-1);loadLevel(levelIdx,2);}
+  if(action==="play"){const s=getSlot();const c3=s.unlockedPage3||[1,0,0,0,0,0,0];let lastCircle=-1;for(let c=6;c>=0;c--){if(c3[c]>0){lastCircle=c;break;}}
+    if(lastCircle>=0&&c3[lastCircle]>0&&c3[lastCircle]<=11){currentPage=3;currentCircle=lastCircle;levelIdx=Math.max(0,Math.min(c3[lastCircle]-1,10));loadLevel(levelIdx,3,currentCircle);}
+    else if(s.hellBossDefeated){currentPage=3;currentCircle=0;levelIdx=0;loadLevel(0,3,0);}
+    else if(s.bossDefeated&&s.unlockedPage2>0){currentPage=2;levelIdx=Math.max(0,s.unlockedPage2-1);loadLevel(levelIdx,2);}
     else{currentPage=1;levelIdx=Math.max(0,Math.min(s.unlocked-1,PAGE1_RAW.length));loadLevel(levelIdx,1);}
     state=GAME_STATE.PLAYING;if(!isTouchDevice)setTimeout(()=>canvas.requestPointerLock(),50);
   }else if(action==="levels"){state=GAME_STATE.LEVELS;levelScroll=0;currentPage=1;rebuildLevelButtons();}
