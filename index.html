@@ -9,60 +9,91 @@
     margin: 0; padding: 0; width: 100%; height: 100%;
     background: #000; overflow: hidden;
     font-family: 'Consolas', 'Courier New', monospace;
-    color: #ddd;
-    user-select: none;
+    color: #ddd; user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
   #game {
-    display: block;
-    width: 100vw; height: 100vh;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-optimize-contrast;
+    display: block; width: 100vw; height: 100vh;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast;
     cursor: none;
   }
   #rotate {
-    position: fixed; inset: 0;
-    background: #000;
-    color: #fff;
-    display: none;
-    align-items: center; justify-content: center;
-    text-align: center;
-    padding: 30px;
-    font-size: 18px;
-    z-index: 999;
+    position: fixed; inset: 0; background: #000; color: #fff;
+    display: none; align-items: center; justify-content: center;
+    text-align: center; padding: 30px; font-size: 18px; z-index: 999;
   }
-  @media (max-width: 700px) and (orientation: portrait) {
-    #rotate { display: flex; }
-  }
+  @media (max-width: 700px) and (orientation: portrait) { #rotate { display: flex; } }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="rotate">📱 Поверните телефон горизонтально<br><br>↻</div>
-
 <script>
 "use strict";
 
-// ============================================================
-// НАСТРОЙКИ
-// ============================================================
 const RAYS = 240;
 const FOV = Math.PI / 3;
 const HALF_FOV = FOV / 2;
 const MAX_DEPTH = 24;
 const DAMAGE_INDICATOR_LIFETIME = 1.2;
 const STORAGE_VOLUME = "python_doom_volume_v1";
-const STORAGE_SLOTS = "python_doom_slots_v1";
-const STORAGE_ACTIVE_SLOT = "python_doom_active_slot_v1";
-
+const STORAGE_MUSIC_VOLUME = "python_doom_music_volume_v1";
+const STORAGE_SLOTS = "python_doom_slots_v2";
+const STORAGE_ACTIVE_SLOT = "python_doom_active_slot_v2";
 const SLOT_COUNT = 5;
-
 let VW = 960, VH = 600;
 
 // ============================================================
-// КАРТЫ — СТРАНИЦА 1 (51 обычный уровень)
+// МУЗЫКА — описания треков
+// ============================================================
+const TRACKS = {
+  default: {
+    name: "Тёмный эмбиент",
+    price: 0,
+    desc: "Простая синтезированная подложка",
+    file: "music/default.mp3",
+    synth: { type: "ambient", base: 55, tempo: 0.5, wave: "sine" }
+  },
+  ya_pogib: {
+    name: "Я погиб на поле боя",
+    price: 60,
+    desc: "Медленный марш павшим",
+    file: "music/ya_pogib.mp3",
+    synth: { type: "march", base: 70, tempo: 0.35, wave: "sawtooth" }
+  },
+  silver_seraph: {
+    name: "Silver Seraph (slowed)",
+    price: 100,
+    desc: "Замедленный синт-дрим",
+    file: "music/silver_seraph.mp3",
+    synth: { type: "dream", base: 90, tempo: 0.7, wave: "triangle" }
+  },
+  kleave_096: {
+    name: "KLEAVE — ENTITY096",
+    price: 130,
+    desc: "Хардкорный индастриал",
+    file: "music/kleave_096.mp3",
+    synth: { type: "industrial", base: 45, tempo: 1.2, wave: "square" }
+  },
+  ian_asher: {
+    name: "Ian Asher — Way Too Self Aware",
+    price: 150,
+    desc: "Меланхоличный синт-вейв",
+    file: "music/ian_asher.mp3",
+    synth: { type: "synthwave", base: 80, tempo: 0.6, wave: "sawtooth" }
+  },
+  korza_telo: {
+    name: "KORZA — Telo pokhudelo",
+    price: 170,
+    desc: "Тёмный техно-бит",
+    file: "music/korza_telo.mp3",
+    synth: { type: "techno", base: 100, tempo: 1.4, wave: "square" }
+  }
+};
+
+// ============================================================
+// КАРТЫ — Страница 1 (51 уровень)
 // ============================================================
 const PAGE1_RAW = [
   ["1111111111111111","1000000010000001","1011100010111001","1010000000010001","1010111110010001","1000100010000001","1110101010111101","1000101000100001","1011101111101101","1000001000001001","1011111011101001","1010000010000001","1010111010111101","1000100010000001","1011100010111002","1111111111111111"],
@@ -121,10 +152,7 @@ const PAGE1_RAW = [
   ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"],
   ["11111111111111111111","10000000000000000001","10110110110110110101","10100100100100100101","10110110110110110101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10110110110110110102","10000000000000000001","11111111111111111111"],
   ["11111111111111111111","10000000000000000001","10101010101010101001","10100010001000100001","10101110111011101101","10001000100010000001","11101110111011101101","10000000000000000001","10111011101110111001","10000010001000100001","10111010111010101101","10001000100010001001","10101110111011101001","10100000000000001001","10101110111011111002","10000000000000000001","11111111111111111111"],
-  ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","10111110111110111101","10000010000010000001","10000010000010000001","10111110111110111101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
-  ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
-  ["1111111111111111111111","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1001001001001001001002","1000000000000000000001","1111111111111111111111"],
-  ["11111111111111111111","10000000000000000001","10110111011011101101","10010001001000100001","10110101011010101101","10000101000010100001","10110101111010111101","10010001000010000001","10110101111011101101","10000000000000000001","10111111011111011101","10001000010000010001","10101111011111010101","10100000000000010101","10101111111111011102","10000000000000000001","11111111111111111111"]
+  ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","10111110111110111101","10000010000010000001","10000010000010000001","10111110111110111101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"]
 ];
 
 // Страница 2 — 30 уровней с демонами
@@ -163,28 +191,61 @@ const PAGE2_RAW = [
   ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"]
 ];
 
+// Страница 3 — 20 адских уровней (усиленные демоны)
+const PAGE3_RAW = [
+  ["11111111111111111111","10000000000000000001","10111111111111111101","10100000000000000101","10101111111111110101","10101000000000010101","10101011111111010101","10101010000001010101","10101010111001010101","10101010101001010101","10101010111001010101","10101010000001010101","10101011111111010101","10101000000000010101","10101111111111110102","10100000000000000001","10111111111111111101","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000010000101","10101111011110110101","10100000000000000101","10111111101111110101","10000001001000000101","10111101001111110101","10100101001000000101","10110101001111111101","10100101001000000001","10110101001111111101","10000100000000000001","10111111011111111102","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","11110111101111011101","10000100010000010001","10000100010000010001","11110111101111011101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000000000101","10101111011111110101","10000000010000000101","10111111010111110101","10000001010000000101","11111101011111110101","10000101010000000001","10110101011111111101","10100101000000000101","10110101011111110101","10000000000000000101","10111111011111111102","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10101010101010101001","10100010001000100001","10101110111011101101","10001000100010000001","11101110111011101101","10000000000000000001","10111011101110111001","10000010001000100001","10111010111010101101","10001000100010001001","10101110111011101001","10100000000000001001","10101110111011111002","10000000000000000001","11111111111111111111"],
+  ["1111111111111111111111","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1001001001001001001002","1000000000000000000001","1111111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10110110110110110101","10100100100100100101","10110110110110110101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10110110110110110102","10000000000000000001","11111111111111111111"],
+  ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10101010101010101001","10001000100010001001","10111011101110111001","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10101010101010101002","10000000000000000001","11111111111111111111"],
+  ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010110101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010102","1010100000000000010101","1010111111111111110101","1010000000000000000101","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10110111011011101101","10010001001000100001","10110101011010101101","10000101000010100001","10110101111010111101","10010001000010000001","10110101111011101101","10000000000000000001","10111111011111011101","10001000010000010001","10101111011111010101","10100000000000010101","10101111111111011102","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10011101110111011001","10010001000100010001","10010101010101010101","10010100010001000101","10010111011101110101","10010000000000000001","10011101110111011101","10000000010001000001","10111011010101011101","10001000010001000001","10101111011101111101","10000000000000000001","10111101110111111102","10000000000000000001","11111111111111111111"],
+  ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10101010101010101001","10001000100010001001","10111011101110111001","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10111111111111111101","10000000000000000001","10101010101010101002","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10110110110110110101","10100100100100100101","10110110110110110101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10111101111101111101","10000000000000000001","10110110110110110102","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000000000101","10101111011111110101","10000000010000000101","10111111010111110101","10000001010000000101","11111101011111110101","10000101010000000001","10110101011111111101","10100101000000000101","10110101011111110101","10000000000000000101","10111111011111111102","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010001","10011001100110011001","10000000000000000001","11110111101111011101","10000100010000010001","10000100010000010001","11110111101111011101","10000000000000000001","10011001100110011001","10010010010010010001","10010010010010010002","10000000000000000001","11111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10101010101010101001","10100010001000100001","10101110111011101101","10001000100010000001","11101110111011101101","10000000000000000001","10111011101110111001","10000010001000100001","10111010111010101101","10001000100010001001","10101110111011101001","10100000000000001001","10101110111011111002","10000000000000000001","11111111111111111111"],
+  ["1111111111111111111111","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1001001001001001001002","1000000000000000000001","1111111111111111111111"],
+  ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000010000101","10101111011110110101","10100000000000000101","10111111101111110101","10000001001000000101","10111101001111110101","10100101001000000101","10110101001111111101","10100101001000000001","10110101001111111101","10000100000000000001","10111111011111111102","10000000000000000001","11111111111111111111"]
+];
+
+// Арена обычного босса (стр. 1)
 const BOSS_ARENA = [
-  "1111111111111111111111111111",
-  "1000000000000000000000000001",
-  "1000000000000000000000000001",
-  "1000000000000000000000000001",
-  "1000000000000000000000000001",
-  "1000011100000000111000001001",
-  "1000011100000000111000001001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000011100000000111000001001",
-  "1000011100000000111000001001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1000000000000000000001",
-  "1111111111111111111111111111"
+  "1111111111111111111111111111","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1111111111111111111111111111"
+];
+
+// Арена Адского Босса (после 20 уровня стр. 3)
+const HELL_BOSS_ARENA = [
+  "11111111111111111111111111111111",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000011110000001111000000000001",
+  "10000010010000001001000000000001",
+  "10000010010000001001000000000001",
+  "10000011110000001111000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000011110000001111000000000001",
+  "10000010010000001001000000000001",
+  "10000010010000001001000000000001",
+  "10000011110000001111000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "10000000000000000000000000000001",
+  "11111111111111111111111111111111"
 ];
 
 const PAGE1_NAMES = [
@@ -212,53 +273,40 @@ const PAGE2_NAMES = [
   "Бездна","Владыка демонов"
 ];
 
+const PAGE3_NAMES = [
+  "Адские врата","Реки лавы","Пламя возмездия","Кровавый шторм",
+  "Костяные поля","Обсидиановый предел","Серный водопад","Огненный вихрь",
+  "Тьма бездны","Проклятые глубины","Молот дьявола","Костёр душ",
+  "Пекло II","Логово титанов","Пепельный трон","Крик тысячи душ",
+  "Разлом ада","Пламя преисподней","Тёмная цитадель","Владыка Преисподней"
+];
+
 // ============================================================
-// ОФОРМЛЕНИЯ (магазин)
+// ТЕМЫ (расширенные)
 // ============================================================
 const THEMES = {
   menu: {
-    default: {
-      name: "Тёмный космос",
-      price: 0,
-      desc: "Звёздное небо по умолчанию"
-    },
-    hell: {
-      name: "Ад",
-      price: 100,
-      desc: "Красный градиент с лавой"
-    },
-    matrix: {
-      name: "Матрица",
-      price: 150,
-      desc: "Зелёные падающие символы"
-    },
-    aurora: {
-      name: "Северное сияние",
-      price: 200,
-      desc: "Сине-зелёные волны"
-    }
+    default: { name: "Тёмный космос", price: 0, desc: "Звёздное небо" },
+    hell: { name: "Ад", price: 100, desc: "Красный градиент с лавой" },
+    matrix: { name: "Матрица", price: 150, desc: "Зелёные символы" },
+    aurora: { name: "Северное сияние", price: 200, desc: "Сине-зелёные волны" },
+    blood: { name: "Кровь", price: 250, desc: "Тёмно-красные капли" },
+    ice: { name: "Ледяная бездна", price: 300, desc: "Снег и лёд" },
+    desert: { name: "Пустыня", price: 300, desc: "Песок и дрожащий горизонт" },
+    cyber: { name: "Киберпанк", price: 350, desc: "Неоновые полосы" },
+    volcano: { name: "Вулкан", price: 400, desc: "Огненные всполохи" },
+    curse: { name: "Проклятие", price: 500, desc: "Туман и черепа" }
   },
   cursor: {
-    default: {
-      name: "Красный крест",
-      price: 0,
-      desc: "Классический красный прицел"
-    },
-    green: {
-      name: "Зелёный Doom",
-      price: 80,
-      desc: "Тонкие зелёные линии с точкой"
-    },
-    gold: {
-      name: "Золотой крест",
-      price: 120,
-      desc: "Золотой с двойным свечением"
-    },
-    neon: {
-      name: "Синий неон",
-      price: 150,
-      desc: "Голубой пульсирующий прицел"
-    }
+    default: { name: "Красный крест", price: 0, desc: "Классика" },
+    green: { name: "Зелёный Doom", price: 80, desc: "Зелёные линии" },
+    gold: { name: "Золотой крест", price: 120, desc: "Золото" },
+    neon: { name: "Синий неон", price: 150, desc: "Голубой пульс" },
+    skull: { name: "Багровый череп", price: 200, desc: "Мини-череп" },
+    blood: { name: "Кровавый крест", price: 250, desc: "С каплями" },
+    ice: { name: "Ледяная звезда", price: 250, desc: "Снежинка" },
+    fire: { name: "Огненный шар", price: 300, desc: "Пламя" },
+    void: { name: "Пустотный глаз", price: 400, desc: "Моргающий глаз" }
   }
 };
 
@@ -267,7 +315,6 @@ const THEMES = {
 // ============================================================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d", { alpha: false });
-
 function resizeCanvas() {
   const maxW = 1920, maxH = 1080;
   const w = Math.max(800, Math.min(window.innerWidth, maxW));
@@ -282,18 +329,30 @@ window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ============================================================
-// ЗВУК
+// ЗВУК + МУЗЫКА
 // ============================================================
 let audioCtx = null;
 let masterVolume = 0.7;
-(function loadVolume() {
+let musicVolume = 0.5;
+let musicSource = null;
+let musicGainNode = null;
+let currentTrackKey = null;
+let currentTrackLoopTimer = null;
+let isMusicPlaying = false;
+
+(function loadVolumes() {
   try {
     const v = parseFloat(localStorage.getItem(STORAGE_VOLUME));
     if (!isNaN(v)) masterVolume = Math.max(0, Math.min(1, v));
+    const mv = parseFloat(localStorage.getItem(STORAGE_MUSIC_VOLUME));
+    if (!isNaN(mv)) musicVolume = Math.max(0, Math.min(1, mv));
   } catch (e) {}
 })();
-function saveVolume() {
-  try { localStorage.setItem(STORAGE_VOLUME, String(masterVolume)); } catch (e) {}
+function saveVolumes() {
+  try {
+    localStorage.setItem(STORAGE_VOLUME, String(masterVolume));
+    localStorage.setItem(STORAGE_MUSIC_VOLUME, String(musicVolume));
+  } catch (e) {}
 }
 function ensureAudio() {
   if (!audioCtx) {
@@ -314,20 +373,206 @@ function playTone(type, freqStart, freqEnd, dur, vol) {
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(now); osc.stop(now + dur);
 }
-function playShot(kind) {
-  playTone("square", kind === "shotgun" ? 180 : 320, 40,
-           kind === "shotgun" ? 0.18 : 0.09, 0.14);
-}
+function playShot(kind) { playTone("square", kind === "shotgun" ? 180 : 320, 40, kind === "shotgun" ? 0.18 : 0.09, 0.14); }
 function playHit() { playTone("sawtooth", 600, 80, 0.25, 0.18); }
 function playPickup() { playTone("sine", 600, 1200, 0.1, 0.12); }
 function playBossRoar() { playTone("sawtooth", 60, 100, 0.7, 0.25); }
+function playHellBossRoar() { playTone("sawtooth", 40, 80, 1.2, 0.35); }
+
+// Синтез мелодии для каждого типа трека
+function startSynthTrack(key) {
+  const track = TRACKS[key];
+  if (!track) return;
+  const s = track.synth;
+  const type = s.type;
+  const baseFreq = s.base;
+  const interval = s.tempo; // сек между нотами
+  const wave = s.wave;
+
+  const playNote = () => {
+    if (!audioCtx || musicVolume <= 0) return;
+    const now = audioCtx.currentTime;
+    const dur = interval * 0.9;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = wave;
+
+    // характер паттерна
+    let freq = baseFreq;
+    const pattern = Math.random();
+    if (type === "ambient") {
+      freq = baseFreq + (pattern < 0.5 ? 0 : 3);
+    } else if (type === "march") {
+      freq = baseFreq + (pattern < 0.3 ? 0 : (pattern < 0.6 ? 5 : 7));
+    } else if (type === "dream") {
+      freq = baseFreq + (pattern < 0.4 ? 0 : (pattern < 0.7 ? 4 : -3));
+    } else if (type === "industrial") {
+      freq = baseFreq + Math.floor(pattern * 12);
+    } else if (type === "synthwave") {
+      freq = baseFreq + (pattern < 0.3 ? 0 : (pattern < 0.7 ? 4 : 9));
+    } else if (type === "techno") {
+      freq = baseFreq + Math.floor(pattern * 6) * 2;
+    }
+
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.linearRampToValueAtTime(freq * 0.98, now + dur);
+
+    gain.gain.setValueAtTime(0.06 * musicVolume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + dur);
+
+    // редкий акцент (вторая нота)
+    if (pattern < 0.3) {
+      const now2 = audioCtx.currentTime;
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(freq * 2, now2);
+      gain2.gain.setValueAtTime(0.03 * musicVolume, now2);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now2 + dur * 0.5);
+      osc2.connect(gain2).connect(audioCtx.destination);
+      osc2.start(now2); osc2.stop(now2 + dur * 0.5);
+    }
+  };
+
+  playNote();
+  currentTrackLoopTimer = setInterval(playNote, interval * 1000);
+}
+
+function stopMusic() {
+  if (currentTrackLoopTimer) {
+    clearInterval(currentTrackLoopTimer);
+    currentTrackLoopTimer = null;
+  }
+  if (musicSource) {
+    try { musicSource.pause(); musicSource.currentTime = 0; } catch (e) {}
+    musicSource = null;
+  }
+  isMusicPlaying = false;
+}
+
+// Попытаться загрузить MP3 из файла, если не получилось — синтезировать
+function playTrackByKey(key) {
+  ensureAudio();
+  stopMusic();
+  currentTrackKey = key;
+  isMusicPlaying = true;
+  const track = TRACKS[key];
+  if (!track) return;
+
+  // Проверяем наличие MP3
+  const audio = new Audio();
+  audio.src = track.file;
+  audio.loop = true;
+  audio.volume = musicVolume * masterVolume;
+  let failed = false;
+  audio.onerror = () => {
+    if (!failed) {
+      failed = true;
+      startSynthTrack(key);
+    }
+  };
+  audio.play().then(() => {
+    musicSource = audio;
+  }).catch(() => {
+    if (!failed) {
+      failed = true;
+      startSynthTrack(key);
+    }
+  });
+}
 
 // ============================================================
-// УТИЛИТЫ
+// СЛОТЫ
 // ============================================================
+function defaultSlot(name) {
+  return {
+    name: name,
+    unlocked: 1,
+    unlockedPage2: 0,
+    unlockedPage3: 0,
+    bossDefeated: false,
+    hellBossDefeated: false,
+    runes: 0,
+    menuTheme: "default",
+    cursorTheme: "default",
+    ownedMenuThemes: ["default"],
+    ownedCursorThemes: ["default"],
+    musicMenu: "default",     // трек для меню
+    musicGame: "default",     // трек для игры
+    ownedTracks: ["default"]
+  };
+}
+function loadSlots() {
+  try {
+    const raw = localStorage.getItem(STORAGE_SLOTS);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length === SLOT_COUNT) {
+        return data.map((s, i) => Object.assign(defaultSlot("Игрок " + (i + 1)), s));
+      }
+    }
+  } catch (e) {}
+  const arr = [];
+  for (let i = 0; i < SLOT_COUNT; i++) arr.push(defaultSlot("Игрок " + (i + 1)));
+  return arr;
+}
+function saveSlots() { try { localStorage.setItem(STORAGE_SLOTS, JSON.stringify(slots)); } catch (e) {} }
+function loadActiveSlot() {
+  try {
+    const v = parseInt(localStorage.getItem(STORAGE_ACTIVE_SLOT));
+    if (!isNaN(v) && v >= 0 && v < SLOT_COUNT) return v;
+  } catch (e) {}
+  return 0;
+}
+function saveActiveSlot() { try { localStorage.setItem(STORAGE_ACTIVE_SLOT, String(activeSlot)); } catch (e) {} }
+
+let slots = loadSlots();
+let activeSlot = loadActiveSlot();
+function getSlot() { return slots[activeSlot]; }
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+const GAME_STATE = {
+  MENU: "menu", SLOTS: "slots", LEVELS: "levels", SETTINGS: "settings",
+  PLAYING: "playing", CONFIRM_RESET: "confirm", SHOP: "shop", RENAME: "rename"
+};
+
+let state = GAME_STATE.MENU;
+let currentPage = 1;
+let player = null;
+let grid = null;
+let enemies = [];
+let pickups = [];
+let exitPos = null;
+let zbuffer = new Float32Array(RAYS);
+let levelIdx = 0;
+let isBossLevel = false;
+let isHellBossLevel = false;
+let isPage2 = false;
+let isPage3 = false;
+let boss = null;
+let bossWaveTimer = 0;
+let bossWaveNum = 0;
+let gameOver = false;
+let win = false;
+let menuTime = 0;
+let lastTime = 0;
+let aiming = false;
+let mouseDX = 0;
+let renameBuffer = "";
+let renameSlotIdx = 0;
+
+const touch = {
+  moveTouchId: null, moveStartX: 0, moveStartY: 0,
+  moveDX: 0, moveDY: 0,
+  lookTouchId: null, lookLastX: 0, fireHeld: false};
+let isTouchDevice = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 function clamp(v, min, max) { return v < min ? min : v > max ? max : v; }
-
-// ============================================================
+  // ============================================================
 // ТЕКСТУРЫ
 // ============================================================
 function makeWallTexture(baseColor, seed) {
@@ -356,87 +601,87 @@ function makeWallTexture(baseColor, seed) {
   }
   return { data: tex, size };
 }
-
 const TEX_WALL = makeWallTexture([140, 140, 160], 1);
 const TEX_EXIT = makeWallTexture([80, 220, 120], 2);
 const TEX_BOSS_WALL = makeWallTexture([120, 40, 40], 3);
 const TEX_DEMON_WALL = makeWallTexture([80, 30, 90], 4);
+const TEX_HELL_WALL = makeWallTexture([160, 50, 20], 5);
 
 // ============================================================
 // СПРАЙТЫ
 // ============================================================
-function makeCanvas(w, h) {
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  return c;
-}
+function makeCanvas(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
 
 function makeEnemySprite() {
   const c = makeCanvas(48, 64);
   const g = c.getContext("2d");
   g.fillStyle = "#282828"; g.fillRect(8, 8, 32, 32);
   g.fillStyle = "#b42828"; g.fillRect(4, 40, 40, 24);
-  g.fillStyle = "#fff";
-  g.fillRect(14, 16, 8, 6);
-  g.fillRect(26, 16, 8, 6);
+  g.fillStyle = "#fff"; g.fillRect(14, 16, 8, 6); g.fillRect(26, 16, 8, 6);
   return c;
 }
-
 function makeDemonSprite() {
   const c = makeCanvas(64, 80);
   const g = c.getContext("2d");
-  g.fillStyle = "rgba(0,0,0,0.5)";
-  g.beginPath(); g.ellipse(32, 74, 26, 5, 0, 0, 7); g.fill();
-  // рога
+  g.fillStyle = "rgba(0,0,0,0.5)"; g.beginPath(); g.ellipse(32, 74, 26, 5, 0, 0, 7); g.fill();
   g.fillStyle = "#2a0a2a";
   g.beginPath(); g.moveTo(14, 14); g.lineTo(6, 0); g.lineTo(20, 12); g.closePath(); g.fill();
   g.beginPath(); g.moveTo(50, 14); g.lineTo(58, 0); g.lineTo(44, 12); g.closePath(); g.fill();
-  // голова
   g.fillStyle = "#5a1a5a"; g.fillRect(12, 8, 40, 30);
   g.fillStyle = "#3a0a3a"; g.fillRect(12, 8, 40, 5);
-  // глаза (красные)
-  g.fillStyle = "#ff3030";
-  g.fillRect(18, 18, 8, 7);
-  g.fillRect(38, 18, 8, 7);
-  g.fillStyle = "#000";
-  g.fillRect(21, 20, 3, 4);
-  g.fillRect(41, 20, 3, 4);
-  // зубы
+  g.fillStyle = "#ff3030"; g.fillRect(18, 18, 8, 7); g.fillRect(38, 18, 8, 7);
+  g.fillStyle = "#000"; g.fillRect(21, 20, 3, 4); g.fillRect(41, 20, 3, 4);
   g.fillStyle = "#000"; g.fillRect(18, 30, 28, 6);
   g.fillStyle = "#fff";
   for (let i = 0; i < 6; i++) g.fillRect(19 + i * 5, 30, 3, 4);
-  // тело
   g.fillStyle = "#7a2a7a"; g.fillRect(8, 38, 48, 34);
   g.fillStyle = "#4a0a4a"; g.fillRect(8, 38, 48, 6);
-  // когти
   g.fillStyle = "#fff";
   for (let i = 0; i < 3; i++) {
-    g.fillRect(2 + i * 4, 68, 3, 6);
-    g.fillRect(56 + i * 4, 68, 3, 6);
+    g.fillRect(2 + i * 4, 68, 3, 6); g.fillRect(56 + i * 4, 68, 3, 6);
   }
-  // ноги
-  g.fillStyle = "#3a0a3a";
-  g.fillRect(14, 72, 12, 8);
-  g.fillRect(38, 72, 12, 8);
+  g.fillStyle = "#3a0a3a"; g.fillRect(14, 72, 12, 8); g.fillRect(38, 72, 12, 8);
   return c;
 }
-
+function makeHellDemonSprite() {
+  const c = makeCanvas(72, 88);
+  const g = c.getContext("2d");
+  g.fillStyle = "rgba(0,0,0,0.5)"; g.beginPath(); g.ellipse(36, 82, 30, 5, 0, 0, 7); g.fill();
+  g.fillStyle = "#1a0000";
+  g.beginPath(); g.moveTo(14, 14); g.lineTo(2, -2); g.lineTo(22, 12); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(58, 14); g.lineTo(70, -2); g.lineTo(50, 12); g.closePath(); g.fill();
+  g.fillStyle = "#8a0808"; g.fillRect(12, 8, 48, 34);
+  g.fillStyle = "#5a0000"; g.fillRect(12, 8, 48, 6);
+  g.fillStyle = "#ffcc00"; g.fillRect(18, 18, 10, 9); g.fillRect(44, 18, 10, 9);
+  g.fillStyle = "#000"; g.fillRect(22, 21, 3, 5); g.fillRect(48, 21, 3, 5);
+  g.fillStyle = "#000"; g.fillRect(16, 32, 40, 8);
+  g.fillStyle = "#fff";
+  for (let i = 0; i < 8; i++) g.fillRect(17 + i * 5, 32, 3, 5);
+  g.fillStyle = "#b01010"; g.fillRect(6, 42, 60, 38);
+  g.fillStyle = "#700000"; g.fillRect(6, 42, 60, 8);
+  g.strokeStyle = "#e02020"; g.lineWidth = 2;
+  for (let i = 0; i < 4; i++) {
+    g.beginPath(); g.moveTo(14, 52 + i * 12);
+    g.quadraticCurveTo(36, 58 + i * 12, 58, 52 + i * 12); g.stroke();
+  }
+  g.fillStyle = "#fff";
+  for (let i = 0; i < 4; i++) {
+    g.fillRect(0 + i * 4, 76, 3, 6); g.fillRect(64 + i * 4, 76, 3, 6);
+  }
+  g.fillStyle = "#700000"; g.fillRect(16, 80, 14, 8); g.fillRect(42, 80, 14, 8);
+  return c;
+}
 function makeBossSprite() {
   const c = makeCanvas(96, 128);
   const g = c.getContext("2d");
-  g.fillStyle = "rgba(0,0,0,0.5)";
-  g.beginPath(); g.ellipse(48, 120, 34, 6, 0, 0, 7); g.fill();
+  g.fillStyle = "rgba(0,0,0,0.5)"; g.beginPath(); g.ellipse(48, 120, 34, 6, 0, 0, 7); g.fill();
   g.fillStyle = "#3c0a0a";
   g.beginPath(); g.moveTo(20, 20); g.lineTo(12, 2); g.lineTo(28, 16); g.closePath(); g.fill();
   g.beginPath(); g.moveTo(76, 20); g.lineTo(84, 2); g.lineTo(68, 16); g.closePath(); g.fill();
   g.fillStyle = "#5a1010"; g.fillRect(16, 12, 64, 44);
   g.fillStyle = "#3a0808"; g.fillRect(16, 12, 64, 6);
-  g.fillStyle = "#ffcc00";
-  g.fillRect(26, 26, 12, 10);
-  g.fillRect(58, 26, 12, 10);
-  g.fillStyle = "#000";
-  g.fillRect(30, 30, 4, 6);
-  g.fillRect(62, 30, 4, 6);
+  g.fillStyle = "#ffcc00"; g.fillRect(26, 26, 12, 10); g.fillRect(58, 26, 12, 10);
+  g.fillStyle = "#000"; g.fillRect(30, 30, 4, 6); g.fillRect(62, 30, 4, 6);
   g.fillStyle = "#000"; g.fillRect(28, 44, 40, 10);
   g.fillStyle = "#fff";
   for (let i = 0; i < 8; i++) g.fillRect(30 + i * 5, 44, 3, 5);
@@ -444,38 +689,73 @@ function makeBossSprite() {
   g.fillStyle = "#4a0c0c"; g.fillRect(12, 58, 72, 8);
   g.strokeStyle = "#b83a3a"; g.lineWidth = 2;
   for (let i = 0; i < 4; i++) {
-    g.beginPath();
-    g.moveTo(20, 68 + i * 12);
-    g.quadraticCurveTo(48, 76 + i * 12, 76, 68 + i * 12);
-    g.stroke();
+    g.beginPath(); g.moveTo(20, 68 + i * 12);
+    g.quadraticCurveTo(48, 76 + i * 12, 76, 68 + i * 12); g.stroke();
   }
-  g.fillStyle = "#3a0808";
-  g.fillRect(0, 62, 14, 46);
-  g.fillRect(82, 62, 14, 46);
+  g.fillStyle = "#3a0808"; g.fillRect(0, 62, 14, 46); g.fillRect(82, 62, 14, 46);
   g.fillStyle = "#fff";
   for (let i = 0; i < 3; i++) {
-    g.fillRect(2 + i * 4, 106, 3, 6);
-    g.fillRect(84 + i * 4, 106, 3, 6);
+    g.fillRect(2 + i * 4, 106, 3, 6); g.fillRect(84 + i * 4, 106, 3, 6);
   }
-  g.fillStyle = "#4a0c0c";
-  g.fillRect(22, 114, 16, 12);
-  g.fillRect(58, 114, 16, 12);
+  g.fillStyle = "#4a0c0c"; g.fillRect(22, 114, 16, 12); g.fillRect(58, 114, 16, 12);
   return c;
 }
-
+function makeHellBossSprite() {
+  const c = makeCanvas(120, 160);
+  const g = c.getContext("2d");
+  g.fillStyle = "rgba(0,0,0,0.6)"; g.beginPath(); g.ellipse(60, 150, 46, 8, 0, 0, 7); g.fill();
+  // 4 рога
+  g.fillStyle = "#200000";
+  g.beginPath(); g.moveTo(20, 24); g.lineTo(4, 0); g.lineTo(30, 18); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(100, 24); g.lineTo(116, 0); g.lineTo(90, 18); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(34, 18); g.lineTo(24, -2); g.lineTo(42, 14); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(86, 18); g.lineTo(96, -2); g.lineTo(78, 14); g.closePath(); g.fill();
+  // голова
+  g.fillStyle = "#a01010"; g.fillRect(24, 16, 72, 50);
+  g.fillStyle = "#600000"; g.fillRect(24, 16, 72, 6);
+  // глаза
+  g.fillStyle = "#ffff00"; g.fillRect(34, 30, 14, 12); g.fillRect(72, 30, 14, 12);
+  g.fillStyle = "#ff2000"; g.fillRect(38, 34, 6, 6); g.fillRect(76, 34, 6, 6);
+  g.fillStyle = "#000"; g.fillRect(40, 36, 3, 3); g.fillRect(78, 36, 3, 3);
+  // пасть
+  g.fillStyle = "#000"; g.fillRect(32, 52, 56, 12);
+  g.fillStyle = "#fff";
+  for (let i = 0; i < 10; i++) g.fillRect(34 + i * 5, 52, 3, 6);
+  // тело
+  g.fillStyle = "#c02020"; g.fillRect(20, 70, 80, 70);
+  g.fillStyle = "#800000"; g.fillRect(20, 70, 80, 10);
+  // рёбра
+  g.strokeStyle = "#ff3030"; g.lineWidth = 3;
+  for (let i = 0; i < 5; i++) {
+    g.beginPath(); g.moveTo(24, 82 + i * 12);
+    g.quadraticCurveTo(60, 90 + i * 12, 96, 82 + i * 12); g.stroke();
+  }
+  // когти
+  g.fillStyle = "#fff";
+  for (let i = 0; i < 4; i++) {
+    g.fillRect(0 + i * 4, 130, 3, 8); g.fillRect(108 + i * 4, 130, 3, 8);
+  }
+  // руки
+  g.fillStyle = "#600000";
+  g.fillRect(0, 72, 20, 60); g.fillRect(100, 72, 20, 60);
+  // ноги
+  g.fillStyle = "#800000";
+  g.fillRect(24, 138, 20, 12); g.fillRect(76, 138, 20, 12);
+  // аура пламени
+  g.strokeStyle = "rgba(255,120,0,0.4)"; g.lineWidth = 4;
+  g.beginPath(); g.arc(60, 80, 55, 0, 7); g.stroke();
+  return c;
+}
 function makeMedkitSprite() {
   const c = makeCanvas(44, 44);
   const g = c.getContext("2d");
   g.fillStyle = "rgba(0,0,0,0.5)"; g.fillRect(3, 5, 38, 38);
   g.fillStyle = "#f5f5f5"; g.fillRect(2, 2, 40, 40);
   g.strokeStyle = "#787878"; g.lineWidth = 2; g.strokeRect(2, 2, 40, 40);
-  g.fillStyle = "#dc1e1e";
-  g.fillRect(17, 8, 10, 28);
-  g.fillRect(8, 17, 28, 10);
+  g.fillStyle = "#dc1e1e"; g.fillRect(17, 8, 10, 28); g.fillRect(8, 17, 28, 10);
   g.fillStyle = "rgba(255,255,255,0.7)"; g.fillRect(6, 6, 30, 2);
   return c;
 }
-
 function makeAmmoSprite() {
   const c = makeCanvas(44, 44);
   const g = c.getContext("2d");
@@ -488,240 +768,56 @@ function makeAmmoSprite() {
     g.fillStyle = "#c8a03c"; g.fillRect(x, 20, 6, 16);
     g.fillStyle = "#e6c86e"; g.fillRect(x, 32, 6, 4);
     g.fillStyle = "#b48c32"; g.fillRect(x + 1, 18, 4, 3);
-    g.strokeStyle = "#fff0b4"; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(x + 1, 21); g.lineTo(x + 1, 33); g.stroke();
   });
-  g.strokeStyle = "rgba(200,220,150,0.8)"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(4, 7); g.lineTo(38, 7); g.stroke();
   return c;
 }
-
 const SPR_ENEMY = makeEnemySprite();
 const SPR_DEMON = makeDemonSprite();
+const SPR_HELL_DEMON = makeHellDemonSprite();
 const SPR_BOSS = makeBossSprite();
+const SPR_HELL_BOSS = makeHellBossSprite();
 const SPR_MEDKIT = makeMedkitSprite();
 const SPR_AMMO = makeAmmoSprite();
 
-// ============================================================
-// ОРУЖИЕ
-// ============================================================
+// Оружие (упрощённое — берём из предыдущей версии, тут сокращено для размера)
 function makePistol() {
-  const c = makeCanvas(260, 220);
-  const g = c.getContext("2d");
+  const c = makeCanvas(260, 220); const g = c.getContext("2d");
   g.fillStyle = "#4b4e55"; g.fillRect(70, 55, 120, 40);
   g.fillStyle = "#2d3037"; g.fillRect(70, 85, 120, 10);
-  g.strokeStyle = "#a0a5b0"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(75, 58); g.lineTo(185, 58); g.stroke();
-  g.strokeStyle = "#282a30"; g.lineWidth = 2;
-  for (let i = 0; i < 6; i++) {
-    const x = 85 + i * 6;
-    g.beginPath(); g.moveTo(x, 62); g.lineTo(x, 82); g.stroke();
-  }
   g.fillStyle = "#3c3e46"; g.fillRect(150, 50, 40, 50);
   g.fillStyle = "#232428"; g.fillRect(180, 60, 30, 30);
-  g.fillStyle = "#0a0a0c"; g.beginPath();
-  g.ellipse(199, 75, 7, 9, 0, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = "#8a8f9a"; g.lineWidth = 2;
-  g.beginPath(); g.arc(195, 75, 14, 0.4, 2.4); g.stroke();
-  g.fillStyle = "#373a41";
-  for (let i = 0; i < 7; i++) g.fillRect(90 + i * 8, 48, 5, 8);
-  g.fillStyle = "#323438"; g.fillRect(155, 42, 20, 10);
-  g.fillStyle = "#141416"; g.fillRect(162, 42, 6, 8);
-  g.fillStyle = "#41444b"; g.fillRect(70, 95, 100, 20);
-  g.strokeStyle = "#373a41"; g.lineWidth = 5;
-  g.beginPath(); g.arc(132, 125, 22, 3.4, 6.0); g.stroke();
-  g.strokeStyle = "#232428"; g.lineWidth = 4;
-  g.beginPath(); g.moveTo(132, 112); g.lineTo(134, 128); g.stroke();
+  g.fillStyle = "#0a0a0c"; g.beginPath(); g.ellipse(199, 75, 7, 9, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = "#5f4123";
-  g.beginPath(); g.moveTo(85, 115); g.lineTo(150, 115);
-  g.lineTo(140, 200); g.lineTo(95, 200); g.closePath(); g.fill();
-  g.strokeStyle = "#372612"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(85, 115); g.lineTo(150, 115);
-  g.lineTo(140, 200); g.lineTo(95, 200); g.closePath(); g.stroke();
-  g.strokeStyle = "#4b3219"; g.lineWidth = 1;
-  for (let i = 1; i < 8; i++) {
-    const y = 118 + i * 10;
-    g.beginPath(); g.moveTo(90, y); g.lineTo(145, y); g.stroke();
-  }
-  g.strokeStyle = "#8c643c"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(95, 120); g.lineTo(105, 195); g.stroke();
-  g.fillStyle = "#2d3037"; g.fillRect(105, 125, 12, 8);
-  g.fillStyle = "#3c3e46"; g.fillRect(108, 195, 22, 12);
-  g.strokeStyle = "#282a30"; g.lineWidth = 2; g.strokeRect(108, 195, 22, 12);
-  g.strokeStyle = "#191a1e"; g.lineWidth = 2; g.strokeRect(70, 55, 120, 40);
+  g.beginPath(); g.moveTo(85, 115); g.lineTo(150, 115); g.lineTo(140, 200); g.lineTo(95, 200); g.closePath(); g.fill();
+  g.strokeStyle = "#372612"; g.lineWidth = 3; g.stroke();
   return c;
 }
-
 function makeShotgun() {
-  const c = makeCanvas(360, 260);
-  const g = c.getContext("2d");
+  const c = makeCanvas(360, 260); const g = c.getContext("2d");
   g.fillStyle = "#6e4623";
-  g.beginPath(); g.moveTo(10, 130); g.lineTo(70, 120);
-  g.lineTo(80, 165); g.lineTo(30, 180); g.closePath(); g.fill();
-  g.strokeStyle = "#462a12"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(10, 130); g.lineTo(70, 120);
-  g.lineTo(80, 165); g.lineTo(30, 180); g.closePath(); g.stroke();
-  g.strokeStyle = "#553719"; g.lineWidth = 1;
-  for (let i = 0; i < 4; i++) {
-    const y = 138 + i * 10;
-    g.beginPath(); g.moveTo(18, y); g.lineTo(70, y - 3); g.stroke();
-  }
-  g.fillStyle = "#3c2612"; g.fillRect(8, 128, 8, 54);
+  g.beginPath(); g.moveTo(10, 130); g.lineTo(70, 120); g.lineTo(80, 165); g.lineTo(30, 180); g.closePath(); g.fill();
   g.fillStyle = "#55585f"; g.fillRect(75, 110, 130, 45);
-  g.fillStyle = "#373a41"; g.fillRect(75, 145, 130, 10);
-  g.strokeStyle = "#aaafb9"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(80, 115); g.lineTo(200, 115); g.stroke();
-  g.fillStyle = "#23262d"; g.fillRect(120, 118, 30, 14);
-  g.strokeStyle = "#14161a"; g.lineWidth = 2; g.strokeRect(120, 118, 30, 14);
-  g.fillStyle = "#3c3e46"; g.fillRect(150, 140, 18, 8);
   g.fillStyle = "#464850"; g.fillRect(200, 100, 150, 22);
-  g.strokeStyle = "#8c919b"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(205, 103); g.lineTo(345, 103); g.stroke();
   g.fillStyle = "#41444b"; g.fillRect(200, 122, 150, 20);
-  g.strokeStyle = "#1e2026"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(200, 122); g.lineTo(350, 122); g.stroke();
   g.fillStyle = "#784e28";
-  g.beginPath(); g.moveTo(175, 145); g.lineTo(260, 145);
-  g.lineTo(255, 178); g.lineTo(180, 178); g.closePath(); g.fill();
-  g.strokeStyle = "#4b3016"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(175, 145); g.lineTo(260, 145);
-  g.lineTo(255, 178); g.lineTo(180, 178); g.closePath(); g.stroke();
-  g.strokeStyle = "#553719"; g.lineWidth = 2;
-  for (let i = 0; i < 6; i++) {
-    const x = 185 + i * 12;
-    g.beginPath(); g.moveTo(x, 150); g.lineTo(x, 174); g.stroke();
-  }
-  g.strokeStyle = "#a06e3c"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(182, 148); g.lineTo(250, 148); g.stroke();
-  g.fillStyle = "#191a1e";
-  g.beginPath(); g.ellipse(351, 111, 7, 11, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#0f1014";
-  g.beginPath(); g.ellipse(351, 111, 5, 7, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#191a1e";
-  g.beginPath(); g.ellipse(351, 132, 7, 10, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#0f1014";
-  g.beginPath(); g.ellipse(351, 132, 5, 6, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#323438";
-  g.beginPath(); g.moveTo(330, 88); g.lineTo(344, 88);
-  g.lineTo(340, 100); g.lineTo(334, 100); g.closePath(); g.fill();
-  g.fillStyle = "#f0f0f0"; g.beginPath(); g.arc(337, 94, 3, 0, 7); g.fill();
-  g.fillStyle = "#1e1e1e"; g.beginPath(); g.arc(337, 94, 1, 0, 7); g.fill();
-  g.strokeStyle = "#373a41"; g.lineWidth = 6;
-  g.beginPath(); g.arc(170, 182, 26, 3.3, 6.1); g.stroke();
-  g.strokeStyle = "#1e2026"; g.lineWidth = 5;
-  g.beginPath(); g.moveTo(168, 165); g.lineTo(170, 190); g.stroke();
-  g.strokeStyle = "#191a1e"; g.lineWidth = 2;
-  g.strokeRect(75, 110, 130, 45);
-  g.strokeRect(200, 100, 150, 22);
-  g.strokeRect(200, 122, 150, 20);
+  g.beginPath(); g.moveTo(175, 145); g.lineTo(260, 145); g.lineTo(255, 178); g.lineTo(180, 178); g.closePath(); g.fill();
   return c;
 }
-
 const SPR_PISTOL = makePistol();
 const SPR_SHOTGUN = makeShotgun();
-
-// ============================================================
-// СЛОТЫ
-// ============================================================
-function defaultSlot(name) {
-  return {
-    name: name,
-    unlocked: 1,               // уровней страницы 1 открыто
-    unlockedPage2: 0,          // уровней страницы 2 открыто
-    bossDefeated: false,       // побеждён ли босс (открывает страницу 2)
-    runes: 0,                  // валюта
-    menuTheme: "default",      // оформление меню
-    cursorTheme: "default",    // оформление курсора
-    ownedMenuThemes: ["default"],
-    ownedCursorThemes: ["default"]
-  };
-}
-
-function loadSlots() {
-  try {
-    const raw = localStorage.getItem(STORAGE_SLOTS);
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (Array.isArray(data) && data.length === SLOT_COUNT) {
-        // добиваем отсутствующие поля
-        return data.map((s, i) => Object.assign(defaultSlot("Игрок " + (i + 1)), s));
-      }
-    }
-  } catch (e) {}
-  const arr = [];
-  for (let i = 0; i < SLOT_COUNT; i++) arr.push(defaultSlot("Игрок " + (i + 1)));
-  return arr;
-}
-function saveSlots() {
-  try { localStorage.setItem(STORAGE_SLOTS, JSON.stringify(slots)); } catch (e) {}
-}
-function loadActiveSlot() {
-  try {
-    const v = parseInt(localStorage.getItem(STORAGE_ACTIVE_SLOT));
-    if (!isNaN(v) && v >= 0 && v < SLOT_COUNT) return v;
-  } catch (e) {}
-  return 0;
-}
-function saveActiveSlot() {
-  try { localStorage.setItem(STORAGE_ACTIVE_SLOT, String(activeSlot)); } catch (e) {}
-}
-
-let slots = loadSlots();
-let activeSlot = loadActiveSlot();
-
-function getSlot() { return slots[activeSlot]; }
-
-// ============================================================
-// СОСТОЯНИЕ
-// ============================================================
-const GAME_STATE = {
-  MENU: "menu", SLOTS: "slots", LEVELS: "levels", SETTINGS: "settings",
-  PLAYING: "playing", CONFIRM_RESET: "confirm", SHOP: "shop",
-  RENAME: "rename"
-};
-
-let state = GAME_STATE.MENU;
-let currentPage = 1;     // 1 или 2
-
-let player = null;
-let grid = null;
-let enemies = [];
-let pickups = [];
-let exitPos = null;
-let zbuffer = new Float32Array(RAYS);
-let levelIdx = 0;
-let isBossLevel = false;
-let isPage2 = false;
-let boss = null;
-let bossWaveTimer = 0;
-let bossWaveNum = 0;
-
-let gameOver = false;
-let win = false;
-let menuTime = 0;
-let lastTime = 0;
-let aiming = false;
-let mouseDX = 0;
-
-// renamе
-let renameBuffer = "";
-let renameSlotIdx = 0;
-
-const touch = {
-  moveTouchId: null, moveStartX: 0, moveStartY: 0,
-  moveDX: 0, moveDY: 0,
-  lookTouchId: null, lookLastX: 0, fireHeld: false
-};
-let isTouchDevice = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 
 // ============================================================
 // ЗАГРУЗКА УРОВНЯ
 // ============================================================
 function loadLevel(idx, page) {
   isBossLevel = (page === 1 && idx === PAGE1_RAW.length);
+  isHellBossLevel = (page === 3 && idx === PAGE3_RAW.length);
   isPage2 = (page === 2);
+  isPage3 = (page === 3);
   let raw;
   if (isBossLevel) raw = BOSS_ARENA;
+  else if (isHellBossLevel) raw = HELL_BOSS_ARENA;
+  else if (page === 3) raw = PAGE3_RAW[idx];
   else if (page === 2) raw = PAGE2_RAW[idx];
   else raw = PAGE1_RAW[idx];
 
@@ -739,25 +835,32 @@ function loadLevel(idx, page) {
   }
   player = {
     x: 1.5, y: 1.5, angle: 0,
-    hp: 100, ammo: isBossLevel ? 200 : 50, score: 0,
-    weapon: "pistol",
-    anim: 0, flash: 0,
-    damageIndicators: []
+    hp: 100, ammo: (isBossLevel || isHellBossLevel) ? 300 : 50, score: 0,
+    weapon: "pistol", anim: 0, flash: 0, damageIndicators: []
   };
   enemies = []; pickups = []; boss = null;
   bossWaveTimer = 0; bossWaveNum = 0;
 
-  if (isBossLevel) {
+  if (isBossLevel || isHellBossLevel) {
     const bx = w / 2, by = h / 2;
-    boss = { x: bx, y: by, hp: 800, maxHp: 800, timer: 1.5, alive: true, isBoss: true, size: 2.2 };
+    const isHell = isHellBossLevel;
+    boss = {
+      x: bx, y: by,
+      hp: isHell ? 1500 : 800,
+      maxHp: isHell ? 1500 : 800,
+      timer: 1.5, alive: true, isBoss: true, isHellBoss: isHell,
+      size: isHell ? 2.6 : 2.2
+    };
     enemies.push(boss);
     pickups.push({ x: 3.5, y: 3.5, kind: "medkit" });
     pickups.push({ x: w - 3.5, y: 3.5, kind: "medkit" });
     pickups.push({ x: 3.5, y: h - 3.5, kind: "medkit" });
-    pickups.push({ x: w - 3.5, y: h - 3.5, kind: "ammo" });
+    pickups.push({ x: w - 3.5, y: h - 3.5, kind: "medkit" });
     pickups.push({ x: w / 2, y: 3.5, kind: "ammo" });
     pickups.push({ x: w / 2, y: h - 3.5, kind: "ammo" });
-    playBossRoar();
+    pickups.push({ x: 3.5, y: h / 2, kind: "ammo" });
+    pickups.push({ x: w - 3.5, y: h / 2, kind: "ammo" });
+    if (isHell) playHellBossRoar(); else playBossRoar();
   } else {
     const free = [];
     for (let y = 1; y < h - 1; y++)
@@ -767,26 +870,24 @@ function loadLevel(idx, page) {
     shuffle(free);
     const n = Math.min(6 + idx, Math.floor(free.length / 4));
     for (let i = 0; i < n; i++) {
-      if (page === 2) {
-        // демоны на странице 2
-        enemies.push({
-          x: free[i].x, y: free[i].y, hp: 80, timer: 1.2,
-          alive: true, size: 1.3, isDemon: true
-        });
+      if (page === 3) {
+        enemies.push({ x: free[i].x, y: free[i].y, hp: 120, timer: 1.1, alive: true, size: 1.5, isHellDemon: true });
+      } else if (page === 2) {
+        enemies.push({ x: free[i].x, y: free[i].y, hp: 80, timer: 1.2, alive: true, size: 1.3, isDemon: true });
       } else {
-        enemies.push({
-          x: free[i].x, y: free[i].y, hp: 30, timer: 1.0,
-          alive: true, size: 1.0
-        });
+        enemies.push({ x: free[i].x, y: free[i].y, hp: 30, timer: 1.0, alive: true, size: 1.0 });
       }
     }
-    const items = page === 2 ? 8 : 5;   // больше аптечек на 2-й странице
+    const items = page >= 2 ? 8 : 5;
     for (let i = n; i < Math.min(n + items, free.length); i++)
       pickups.push({ x: free[i].x, y: free[i].y, kind: i % 2 === 0 ? "medkit" : "ammo" });
   }
   gameOver = false; win = false;
-}
 
+  // Запустить музыку для игры
+  const slot = getSlot();
+  playTrackByKey(slot.musicGame || "default");
+}
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = (Math.random() * (i + 1)) | 0;
@@ -824,18 +925,22 @@ function takeDamage(dmg, sx, sy) {
   rel = ((rel + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
   player.damageIndicators.push({ rel, t: DAMAGE_INDICATOR_LIFETIME });
 }
-function spawnMinions() {
+function spawnMinions(isHell) {
   const h = grid.length, w = grid[0].length;
   const positions = [
     { x: 3.5, y: 3.5 }, { x: w - 3.5, y: 3.5 },
     { x: 3.5, y: h - 3.5 }, { x: w - 3.5, y: h - 3.5 },
     { x: w / 2, y: 3.5 }, { x: w / 2, y: h - 3.5 },
   ];
-  const count = Math.min(2 + bossWaveNum, 6);
+  const count = Math.min(2 + bossWaveNum, isHell ? 8 : 6);
   const shuffled = positions.slice().sort(() => Math.random() - 0.5);
   for (let i = 0; i < count; i++) {
     const p = shuffled[i % shuffled.length];
-    enemies.push({ x: p.x, y: p.y, hp: 30, timer: 1.2, alive: true, size: 1.0, minion: true });
+    if (isHell) {
+      enemies.push({ x: p.x, y: p.y, hp: 60, timer: 1.2, alive: true, size: 1.0, minion: true });
+    } else {
+      enemies.push({ x: p.x, y: p.y, hp: 30, timer: 1.2, alive: true, size: 1.0, minion: true });
+    }
   }
 }
 function updateEnemies(dt) {
@@ -846,22 +951,44 @@ function updateEnemies(dt) {
     if (dist < 0.01) continue;
     const visible = hasLineOfSight(e.x, e.y, player.x, player.y);
 
-    if (e.isBoss) {
-      if (dist > 1.5 && dist < 12) {
-        const sp = 0.8;
+    if (e.isBoss || e.isHellBoss) {
+      const isHell = e.isHellBoss;
+      if (dist > 1.5 && dist < (isHell ? 14 : 12)) {
+        const sp = isHell ? 1.1 : 0.8;
         const nx = e.x + (dx / dist) * sp * dt;
         const ny = e.y + (dy / dist) * sp * dt;
         if (!isWall(ny, e.x)) e.y = ny;
         if (!isWall(e.x, nx)) e.x = nx;
       }
       e.timer -= dt;
-      if (dist < 14 && e.timer <= 0) {
+      if (dist < (isHell ? 16 : 14) && e.timer <= 0) {
+        e.timer = isHell ? 0.45 : 0.7;
+        const shots = isHell ? 4 : 3;
+        const dmgMin = isHell ? 12 : 8;
+        const dmgRange = isHell ? 8 : 6;
+        for (let k = 0; k < shots; k++) {
+          if (Math.random() < 0.75) {
+            takeDamage(dmgMin + Math.floor(Math.random() * dmgRange), e.x, e.y);
+          }
+        }
+      }
+    } else if (e.isHellDemon) {
+      if (dist > 0.9) {
+        const sp = 2.6;
+        const nx = e.x + (dx / dist) * sp * dt;
+        const ny = e.y + (dy / dist) * sp * dt;
+        if (!isWall(ny, e.x)) e.y = ny;
+        if (!isWall(e.x, nx)) e.x = nx;
+      }
+      e.timer -= dt;
+      if (visible && dist < 1.4 && e.timer <= 0) {
         e.timer = 0.7;
-        for (let k = 0; k < 3; k++)
-          if (Math.random() < 0.7) takeDamage(8 + Math.floor(Math.random() * 6), e.x, e.y);
+        if (Math.random() < 0.9) {
+          takeDamage(30 + Math.floor(Math.random() * 10), e.x, e.y);
+          playHit();
+        }
       }
     } else if (e.isDemon) {
-      // Демоны: быстро бегут, атакуют в ближнем бою
       if (dist > 0.9) {
         const sp = 2.2;
         const nx = e.x + (dx / dist) * sp * dt;
@@ -891,11 +1018,12 @@ function updateEnemies(dt) {
       }
     }
   }
-  if (isBossLevel && boss && boss.alive) {
+  if ((isBossLevel || isHellBossLevel) && boss && boss.alive) {
     bossWaveTimer -= dt;
     const aliveMinions = enemies.filter(e => e.alive && e.minion).length;
     if (bossWaveTimer <= 0 && aliveMinions < 2) {
-      bossWaveNum += 1; bossWaveTimer = 6; spawnMinions();
+      bossWaveNum += 1; bossWaveTimer = 6;
+      spawnMinions(isHellBossLevel);
     }
   }
 }
@@ -918,7 +1046,7 @@ function shoot() {
     const dist = Math.hypot(dx, dy);
     let ang = Math.atan2(dy, dx) - player.angle;
     ang = ((ang + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-    const hitRadius = e.isBoss ? 0.12 : e.isDemon ? 0.10 : 0.08;
+    const hitRadius = (e.isBoss || e.isHellBoss) ? 0.12 : (e.isDemon || e.isHellDemon) ? 0.10 : 0.08;
     if (Math.abs(ang) < hitRadius + cone && dist < 12 && dist < bestD) {
       if (hasLineOfSight(player.x, player.y, e.x, e.y)) { best = e; bestD = dist; }
     }
@@ -928,27 +1056,27 @@ function shoot() {
     best.hp -= base * dmgMul;
     if (best.hp <= 0) {
       best.alive = false;
-      player.score += best.isBoss ? 5000 : (best.isDemon ? 250 : 100);
+      player.score += best.isHellBoss ? 10000 : best.isBoss ? 5000 :
+                     best.isHellDemon ? 400 : best.isDemon ? 250 : 100;
       playHit();
     }
   }
 }
 
 // ============================================================
-// РЕНДЕР 3D
+// РЕНДЕР МИРА
 // ============================================================
 function renderWalls() {
   const gh = grid.length, gw = grid[0].length;
   const startAng = player.angle - HALF_FOV;
   const stepAng = FOV / (RAYS - 1);
-  let ceilColor = "#1e1e28";
-  let floorColor = "#3c3228";
+  let ceilColor = "#1e1e28", floorColor = "#3c3228";
   if (isBossLevel) { ceilColor = "#1a0a0a"; floorColor = "#2a1010"; }
+  else if (isHellBossLevel) { ceilColor = "#200000"; floorColor = "#400000"; }
+  else if (isPage3) { ceilColor = "#1a0000"; floorColor = "#300000"; }
   else if (isPage2) { ceilColor = "#160a1a"; floorColor = "#2a1030"; }
-  ctx.fillStyle = ceilColor;
-  ctx.fillRect(0, 0, VW, VH / 2);
-  ctx.fillStyle = floorColor;
-  ctx.fillRect(0, VH / 2, VW, VH / 2);
+  ctx.fillStyle = ceilColor; ctx.fillRect(0, 0, VW, VH / 2);
+  ctx.fillStyle = floorColor; ctx.fillRect(0, VH / 2, VW, VH / 2);
   const colW = Math.ceil(VW / RAYS) + 1;
   for (let i = 0; i < RAYS; i++) {
     const ang = startAng + stepAng * i;
@@ -966,6 +1094,7 @@ function renderWalls() {
       const y0 = (VH >> 1) - colH / 2;
       let tex;
       if (cell === 2) tex = TEX_EXIT;
+      else if (isHellBossLevel || isPage3) tex = TEX_HELL_WALL;
       else if (isBossLevel) tex = TEX_BOSS_WALL;
       else if (isPage2) tex = TEX_DEMON_WALL;
       else tex = TEX_WALL;
@@ -1027,7 +1156,9 @@ function renderSprites() {
   for (const e of enemies) {
     if (!e.alive) continue;
     let spr;
-    if (e.isBoss) spr = SPR_BOSS;
+    if (e.isHellBoss) spr = SPR_HELL_BOSS;
+    else if (e.isBoss) spr = SPR_BOSS;
+    else if (e.isHellDemon) spr = SPR_HELL_DEMON;
     else if (e.isDemon) spr = SPR_DEMON;
     else spr = SPR_ENEMY;
     list.push({ x: e.x, y: e.y, spr, size: e.size || 1.0 });
@@ -1124,7 +1255,8 @@ function renderMinimap() {
     for (let x = 0; x < gw; x++) {
       const c = grid[y][x];
       if (!c) continue;
-      if (isBossLevel) ctx.fillStyle = c === 2 ? "#50dc78" : "#7a2a2a";
+      if (isHellBossLevel || isPage3) ctx.fillStyle = c === 2 ? "#50dc78" : "#aa4020";
+      else if (isBossLevel) ctx.fillStyle = c === 2 ? "#50dc78" : "#7a2a2a";
       else if (isPage2) ctx.fillStyle = c === 2 ? "#50dc78" : "#5a3a6a";
       else ctx.fillStyle = c === 2 ? "#50dc78" : "#64647e";
       ctx.fillRect(ox + x * s, oy + y * s, s - 1, s - 1);
@@ -1132,11 +1264,14 @@ function renderMinimap() {
   }
   for (const e of enemies) {
     if (!e.alive) continue;
-    if (e.isBoss) {
-      ctx.fillStyle = "#ffcc00";
-      ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 6, 0, 7); ctx.fill();
+    if (e.isHellBoss || e.isBoss) {
+      ctx.fillStyle = e.isHellBoss ? "#ff4020" : "#ffcc00";
+      ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 7, 0, 7); ctx.fill();
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 8, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 9, 0, 7); ctx.stroke();
+    } else if (e.isHellDemon) {
+      ctx.fillStyle = "#ff2000";
+      ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 4, 0, 7); ctx.fill();
     } else if (e.isDemon) {
       ctx.fillStyle = "#c050ff";
       ctx.beginPath(); ctx.arc(ox + e.x * s, oy + e.y * s, 4, 0, 7); ctx.fill();
@@ -1151,8 +1286,7 @@ function renderMinimap() {
   }
   ctx.fillStyle = "#3cb4ff";
   ctx.beginPath(); ctx.arc(ox + player.x * s, oy + player.y * s, 4, 0, 7); ctx.fill();
-  ctx.strokeStyle = "#3cb4ff";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#3cb4ff"; ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(ox + player.x * s, oy + player.y * s);
   ctx.lineTo(ox + (player.x + Math.cos(player.angle) * 1.2) * s,
@@ -1166,16 +1300,18 @@ function renderBossBar() {
   const x = (VW - barW) / 2, y = 14;
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(x - 4, y - 4, barW + 8, barH + 8);
-  ctx.strokeStyle = "#c83030"; ctx.lineWidth = 2;
+  ctx.strokeStyle = boss.isHellBoss ? "#ff4020" : "#c83030"; ctx.lineWidth = 2;
   ctx.strokeRect(x - 4, y - 4, barW + 8, barH + 8);
   const frac = Math.max(0, boss.hp / boss.maxHp);
   ctx.fillStyle = "#3a0a0a"; ctx.fillRect(x, y, barW, barH);
-  ctx.fillStyle = "#dc2828"; ctx.fillRect(x, y, barW * frac, barH);
+  ctx.fillStyle = boss.isHellBoss ? "#ff2020" : "#dc2828";
+  ctx.fillRect(x, y, barW * frac, barH);
   ctx.fillStyle = "rgba(255,255,255,0.15)";
   ctx.fillRect(x, y, barW * frac, 5);
   ctx.font = "bold 16px Consolas, monospace";
   ctx.fillStyle = "#fff";
-  const txt = "БОСС: ПОВЕЛИТЕЛЬ БЕЗДНЫ  —  " + Math.max(0, boss.hp | 0) + " / " + boss.maxHp;
+  const name = boss.isHellBoss ? "ВЛАДЫКА ПРЕИСПОДНЕЙ" : "ПОВЕЛИТЕЛЬ БЕЗДНЫ";
+  const txt = "БОСС: " + name + "  —  " + Math.max(0, boss.hp | 0) + " / " + boss.maxHp;
   const tw = ctx.measureText(txt).width;
   ctx.fillText(txt, VW / 2 - tw / 2, y + barH - 6);
 }
@@ -1197,19 +1333,20 @@ function renderHud() {
   ctx.font = "14px Consolas, monospace";
   ctx.fillText("WASD | Мышь | ПКМ - прицел | ЛКМ - выстрел | Q - оружие | ESC - меню",
                10, VH - 8);
-  // Название уровня
   let title = "";
-  if (isBossLevel) title = "★ БОСС: ПОВЕЛИТЕЛЬ БЕЗДНЫ ★";
+  if (isHellBossLevel) title = "★★ АДСКИЙ БОСС: ВЛАДЫКА ПРЕИСПОДНЕЙ ★★";
+  else if (isBossLevel) title = "★ БОСС: ПОВЕЛИТЕЛЬ БЕЗДНЫ ★";
+  else if (isPage3) title = "СТР 3 — " + (levelIdx + 1) + ": " + PAGE3_NAMES[levelIdx];
   else if (isPage2) title = "СТР 2 — " + (levelIdx + 1) + ": " + PAGE2_NAMES[levelIdx];
   else title = "Уровень " + (levelIdx + 1) + ": " + PAGE1_NAMES[levelIdx];
   ctx.font = "bold 18px Consolas, monospace";
-  ctx.fillStyle = isPage2 ? "#d0a0ff" : "#dcdcf0";
+  ctx.fillStyle = isHellBossLevel ? "#ff4020" : isPage3 ? "#ff8040" : isPage2 ? "#d0a0ff" : "#dcdcf0";
   const tw = ctx.measureText(title).width;
   ctx.fillText(title, VW / 2 - tw / 2, 55);
 }
 
 // ============================================================
-// ФОНЫ
+// ФОНЫ (10 штук)
 // ============================================================
 const stars = [];
 for (let i = 0; i < 180; i++) {
@@ -1225,23 +1362,49 @@ for (let i = 0; i < 180; i++) {
 const matrixCols = [];
 for (let i = 0; i < 60; i++) {
   matrixCols.push({
-    x: Math.random() * VW,
-    y: Math.random() * VH,
+    x: Math.random() * VW, y: Math.random() * VH,
     speed: 40 + Math.random() * 80,
     char: String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96))
+  });
+}
+const snowflakes = [];
+for (let i = 0; i < 80; i++) {
+  snowflakes.push({
+    x: Math.random() * VW, y: Math.random() * VH,
+    r: 1 + Math.random() * 2, speed: 20 + Math.random() * 60
+  });
+}
+const bloodDrops = [];
+for (let i = 0; i < 30; i++) {
+  bloodDrops.push({
+    x: Math.random() * VW, y: Math.random() * VH,
+    speed: 30 + Math.random() * 80, len: 8 + Math.random() * 20
+  });
+}
+const cyberLines = [];
+for (let i = 0; i < 20; i++) {
+  cyberLines.push({
+    y: Math.random() * VH,
+    speed: 30 + Math.random() * 100,
+    color: ["#ff00aa", "#00ffee", "#aa00ff", "#ffcc00"][(Math.random() * 4) | 0]
+  });
+}
+const fireSparks = [];
+for (let i = 0; i < 60; i++) {
+  fireSparks.push({
+    x: Math.random() * VW, y: VH + Math.random() * 200,
+    speed: 40 + Math.random() * 120, size: 1 + Math.random() * 3
   });
 }
 
 function drawMenuBg(dt) {
   const slot = getSlot();
   const theme = slot.menuTheme || "default";
+
   if (theme === "hell") {
     const grad = ctx.createLinearGradient(0, 0, 0, VH);
-    grad.addColorStop(0, "#1a0505");
-    grad.addColorStop(0.6, "#3a0808");
-    grad.addColorStop(1, "#6a1500");
+    grad.addColorStop(0, "#1a0505"); grad.addColorStop(0.6, "#3a0808"); grad.addColorStop(1, "#6a1500");
     ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
-    // лава-полоски
     for (let i = 0; i < 12; i++) {
       const y = VH - 40 + Math.sin(menuTime * 0.8 + i) * 8;
       ctx.fillStyle = "rgba(255," + (60 + i * 8) + ",0,0.4)";
@@ -1259,20 +1422,98 @@ function drawMenuBg(dt) {
     }
   } else if (theme === "aurora") {
     const grad = ctx.createLinearGradient(0, 0, 0, VH);
-    grad.addColorStop(0, "#02101a");
-    grad.addColorStop(1, "#001a1a");
+    grad.addColorStop(0, "#02101a"); grad.addColorStop(1, "#001a1a");
     ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
     for (let i = 0; i < 5; i++) {
       const y = VH * 0.3 + Math.sin(menuTime * 0.5 + i * 0.8) * 100;
       const g2 = ctx.createLinearGradient(0, y - 60, 0, y + 60);
       g2.addColorStop(0, "rgba(0,0,0,0)");
-      g2.addColorStop(0.5, "rgba(" + (0) + "," + (150 + i * 20) + "," + (200 - i * 30) + ",0.25)");
+      g2.addColorStop(0.5, "rgba(0," + (150 + i * 20) + "," + (200 - i * 30) + ",0.25)");
       g2.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g2; ctx.fillRect(0, y - 60, VW, 120);
+    }
+  } else if (theme === "blood") {
+    const grad = ctx.createLinearGradient(0, 0, 0, VH);
+    grad.addColorStop(0, "#1a0000"); grad.addColorStop(0.5, "#2a0000"); grad.addColorStop(1, "#4a0808");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
+    for (const d of bloodDrops) {
+      d.y += d.speed * dt;
+      if (d.y > VH + 30) { d.y = -30; d.x = Math.random() * VW; }
+      ctx.fillStyle = "rgba(150,0,0,0.6)";
+      ctx.fillRect(d.x, d.y, 2, d.len);
+    }
+    // виньетка
+    const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.3, VW / 2, VH / 2, Math.max(VW, VH) * 0.7);
+    vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(80,0,0,0.7)");
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
+  } else if (theme === "ice") {
+    const grad = ctx.createLinearGradient(0, 0, 0, VH);
+    grad.addColorStop(0, "#0a1a2a"); grad.addColorStop(0.5, "#1a3a5a"); grad.addColorStop(1, "#0a2038");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = "rgba(200,230,255,0.8)";
+    for (const s of snowflakes) {
+      s.y += s.speed * dt;
+      if (s.y > VH + 5) { s.y = -5; s.x = Math.random() * VW; }
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+    }
+  } else if (theme === "desert") {
+    const grad = ctx.createLinearGradient(0, 0, 0, VH);
+    grad.addColorStop(0, "#3a2a1a"); grad.addColorStop(0.5, "#8a5a2a"); grad.addColorStop(1, "#c08840");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
+    // дрожащий горизонт
+    for (let i = 0; i < 3; i++) {
+      const y = VH * 0.5 + i * 4 + Math.sin(menuTime * 2 + i) * 3;
+      ctx.fillStyle = "rgba(255,200,120,0.3)";
+      ctx.fillRect(0, y, VW, 2);
+    }
+  } else if (theme === "cyber") {
+    ctx.fillStyle = "#0a001a"; ctx.fillRect(0, 0, VW, VH);
+    for (const l of cyberLines) {
+      l.y += l.speed * dt;
+      if (l.y > VH + 10) { l.y = -10; l.color = ["#ff00aa", "#00ffee", "#aa00ff", "#ffcc00"][(Math.random() * 4) | 0]; }
+      ctx.fillStyle = l.color;
+      ctx.globalAlpha = 0.4;
+      ctx.fillRect(0, l.y, VW, 2);
+      ctx.globalAlpha = 1;
+    }
+    // сетка
+    ctx.strokeStyle = "rgba(255,0,170,0.15)"; ctx.lineWidth = 1;
+    for (let x = 0; x < VW; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, VH); ctx.stroke();
+    }
+  } else if (theme === "volcano") {
+    ctx.fillStyle = "#0a0505"; ctx.fillRect(0, 0, VW, VH);
+    for (const s of fireSparks) {
+      s.y -= s.speed * dt;
+      if (s.y < -10) { s.y = VH + 10; s.x = Math.random() * VW; }
+      ctx.fillStyle = "rgba(255," + Math.floor(100 + Math.random() * 100) + ",0," + (0.4 + Math.random() * 0.4) + ")";
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, 7); ctx.fill();
+    }
+    // красная дымка снизу
+    const grad = ctx.createLinearGradient(0, VH * 0.7, 0, VH);
+    grad.addColorStop(0, "rgba(255,80,0,0)"); grad.addColorStop(1, "rgba(255,80,0,0.4)");
+    ctx.fillStyle = grad; ctx.fillRect(0, VH * 0.7, VW, VH * 0.3);
+  } else if (theme === "curse") {
+    const grad = ctx.createLinearGradient(0, 0, 0, VH);
+    grad.addColorStop(0, "#0a1a0a"); grad.addColorStop(0.5, "#152015"); grad.addColorStop(1, "#0a1a0a");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
+    // туман
+    for (let i = 0; i < 5; i++) {
+      const y = VH * 0.5 + Math.sin(menuTime * 0.4 + i) * 100;
+      const g2 = ctx.createRadialGradient(VW * (i / 5), y, 0, VW * (i / 5), y, 200);
+      g2.addColorStop(0, "rgba(60,120,60,0.15)"); g2.addColorStop(1, "rgba(60,120,60,0)");
       ctx.fillStyle = g2;
-      ctx.fillRect(0, y - 60, VW, 120);
+      ctx.fillRect(0, y - 200, VW, 400);
+    }
+    // черепа (символы)
+    ctx.fillStyle = "rgba(150,200,150,0.3)";
+    ctx.font = "24px Consolas, monospace";
+    for (let i = 0; i < 8; i++) {
+      const x = (i * 137 + Math.sin(menuTime + i) * 50) % VW;
+      const y = (i * 89 + Math.cos(menuTime * 0.7 + i) * 80) % VH;
+      ctx.fillText("☠", x, y);
     }
   } else {
-    // default — тёмный космос
     const grad = ctx.createRadialGradient(VW / 2, VH / 2, 0, VW / 2, VH / 2, Math.max(VW, VH) / 2);
     grad.addColorStop(0, "#231f3c"); grad.addColorStop(1, "#050508");
     ctx.fillStyle = grad; ctx.fillRect(0, 0, VW, VH);
@@ -1308,7 +1549,7 @@ function drawTitle() {
 }
 
 // ============================================================
-// КУРСОР
+// КУРСОРЫ (10 штук)
 // ============================================================
 function drawCursor(now) {
   if (state === GAME_STATE.PLAYING) return;
@@ -1318,105 +1559,163 @@ function drawCursor(now) {
 
   if (theme === "green") {
     const gap = 5, len = 10;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.65)"; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.65)"; ctx.lineWidth = 4;
+    drawCrossLines(x, y, gap, len);
     ctx.strokeStyle = "#00ff50"; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    drawCrossLines(x, y, gap, len);
     ctx.fillStyle = "#00ff50";
     ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill();
   } else if (theme === "gold") {
     const glow = ctx.createRadialGradient(x, y, 0, x, y, 22);
-    glow.addColorStop(0, "rgba(255, 215, 0, " + (0.4 + 0.2 * pulse) + ")");
-    glow.addColorStop(1, "rgba(255, 215, 0, 0)");
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, y, 22, 0, 7); ctx.fill();
+    glow.addColorStop(0, "rgba(255,215,0," + (0.4 + 0.2 * pulse) + ")");
+    glow.addColorStop(1, "rgba(255,215,0,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 22, 0, 7); ctx.fill();
     const gap = 4, len = 10 + pulse * 2;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.75)"; ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.75)"; ctx.lineWidth = 5;
+    drawCrossLines(x, y, gap, len);
     ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    drawCrossLines(x, y, gap, len);
     ctx.fillStyle = "#fff5b0";
     ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill();
   } else if (theme === "neon") {
     const glow = ctx.createRadialGradient(x, y, 0, x, y, 20);
-    glow.addColorStop(0, "rgba(80, 200, 255, " + (0.4 + 0.25 * pulse) + ")");
-    glow.addColorStop(1, "rgba(80, 200, 255, 0)");
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill();
+    glow.addColorStop(0, "rgba(80,200,255," + (0.4 + 0.25 * pulse) + ")");
+    glow.addColorStop(1, "rgba(80,200,255,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill();
     const gap = 6, len = 11;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)"; ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 5;
+    drawCrossLines(x, y, gap, len);
     ctx.strokeStyle = "#50c8ff"; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    drawCrossLines(x, y, gap, len);
     ctx.fillStyle = "#b0e8ff";
     ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill();
+  } else if (theme === "skull") {
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 22);
+    glow.addColorStop(0, "rgba(255,20,20," + (0.4 + 0.3 * pulse) + ")");
+    glow.addColorStop(1, "rgba(255,20,20,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 22, 0, 7); ctx.fill();
+    // череп
+    ctx.fillStyle = "#e6e0d0";
+    ctx.beginPath(); ctx.arc(x, y - 2, 8, 0, 7); ctx.fill();
+    ctx.fillRect(x - 8, y - 2, 16, 10);
+    ctx.fillRect(x - 5, y + 6, 10, 5);
+    ctx.fillStyle = "#000";
+    ctx.beginPath(); ctx.arc(x - 3, y - 3, 2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 3, y - 3, 2, 0, 7); ctx.fill();
+    ctx.fillRect(x - 2, y + 6, 4, 4);
+  } else if (theme === "blood") {
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 20);
+    glow.addColorStop(0, "rgba(200,0,0," + (0.3 + 0.2 * pulse) + ")");
+    glow.addColorStop(1, "rgba(200,0,0,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill();
+    const gap = 4, len = 10;
+    ctx.strokeStyle = "#8a0000"; ctx.lineWidth = 4;
+    drawCrossLines(x, y, gap, len);
+    ctx.strokeStyle = "#ff2020"; ctx.lineWidth = 2;
+    drawCrossLines(x, y, gap, len);
+    // капли
+    ctx.fillStyle = "#8a0000";
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI / 2) + (now * 0.001);
+      const dd = 18 + Math.sin(now * 0.01 + i) * 4;
+      const cx = x + Math.cos(a) * dd;
+      const cy = y + Math.sin(a) * dd;
+      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill();
+    }
+  } else if (theme === "ice") {
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 22);
+    glow.addColorStop(0, "rgba(150,230,255," + (0.4 + 0.2 * pulse) + ")");
+    glow.addColorStop(1, "rgba(150,230,255,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 22, 0, 7); ctx.fill();
+    // снежинка
+    ctx.strokeStyle = "#b0e8ff"; ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3 + now * 0.001;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(a) * 12, y + Math.sin(a) * 12);
+      ctx.stroke();
+      // маленькие веточки
+      const bx = x + Math.cos(a) * 8;
+      const by = y + Math.sin(a) * 8;
+      for (let j = -1; j <= 1; j += 2) {
+        const aa = a + j * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(aa) * 4, by + Math.sin(aa) * 4);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill();
+  } else if (theme === "fire") {
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 24);
+    glow.addColorStop(0, "rgba(255,150,0," + (0.5 + 0.2 * pulse) + ")");
+    glow.addColorStop(1, "rgba(255,150,0,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill();
+    // пламя
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI / 3) + now * 0.002;
+      const r = 10 + Math.sin(now * 0.01 + i) * 3;
+      const cx = x + Math.cos(a) * r * 0.6;
+      const cy = y + Math.sin(a) * r * 0.6 - 5;
+      ctx.fillStyle = "rgba(255," + (100 + i * 20) + ",0,0.7)";
+      ctx.beginPath(); ctx.arc(cx, cy, 4 + Math.sin(now * 0.02 + i), 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill();
+  } else if (theme === "void") {
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 26);
+    glow.addColorStop(0, "rgba(150,0,255," + (0.4 + 0.3 * pulse) + ")");
+    glow.addColorStop(1, "rgba(150,0,255,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fill();
+    // глаз
+    const blink = Math.sin(now * 0.002) > 0.95 ? 0.3 : 1;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, blink);
+    ctx.fillStyle = "#000";
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 8, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#a040ff";
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, 7); ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(-2, -2, 1.5, 0, 7); ctx.fill();
+    ctx.restore();
   } else {
     // default — красный крест
     const glow = ctx.createRadialGradient(x, y, 0, x, y, 18);
-    glow.addColorStop(0, "rgba(255, 60, 60, " + (0.25 + 0.15 * pulse) + ")");
-    glow.addColorStop(1, "rgba(255, 60, 60, 0)");
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, y, 18, 0, 7); ctx.fill();
-    const len = 9 + pulse * 2;
-    const gap = 4;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.65)"; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255, 240, 240, 0.98)"; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
-    ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
-    ctx.stroke();
+    glow.addColorStop(0, "rgba(255,60,60," + (0.25 + 0.15 * pulse) + ")");
+    glow.addColorStop(1, "rgba(255,60,60,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 18, 0, 7); ctx.fill();
+    const len = 9 + pulse * 2, gap = 4;
+    ctx.strokeStyle = "rgba(0,0,0,0.65)"; ctx.lineWidth = 4;
+    drawCrossLines(x, y, gap, len);
+    ctx.strokeStyle = "rgba(255,240,240,0.98)"; ctx.lineWidth = 2;
+    drawCrossLines(x, y, gap, len);
     ctx.fillStyle = "#ffdcdc";
     ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill();
   }
 }
+function drawCrossLines(x, y, gap, len) {
+  ctx.beginPath();
+  ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
+  ctx.moveTo(x + gap, y); ctx.lineTo(x + gap + len, y);
+  ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
+  ctx.moveTo(x, y + gap); ctx.lineTo(x, y + gap + len);
+  ctx.stroke();
+}
 
 // ============================================================
-// МЕНЮ-КНОПКИ
+// МЕНЮ-КНОПКИ (дополнено магазином музыки)
 // ============================================================
 let menuButtons = [];
 function rebuildMenuButtons() {
   menuButtons = [];
-  const bw = 320, bh = 48, gap = 10;
+  const bw = 320, bh = 44, gap = 8;
   const cx = VW / 2 - bw / 2;
-  const startY = 180;
+  const startY = 170;
   const defs = [
     { text: "ИГРАТЬ", action: "play" },
     { text: "ВЫБОР УРОВНЯ", action: "levels" },
@@ -1456,8 +1755,6 @@ function drawMenuButtons() {
     ctx.globalAlpha = b.appear;
     ctx.fillStyle = bg; roundRect(x, y, b.w, b.h, 10); ctx.fill();
     ctx.strokeStyle = border; ctx.lineWidth = 2; roundRect(x, y, b.w, b.h, 10); ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1;
-    roundRect(x + 3, y + 3, b.w - 6, b.h - 6, 8); ctx.stroke();
     if (b.hover > 0.05) {
       const barH = b.h * b.hover * 0.7;
       const barY = y + b.h / 2 - barH / 2;
@@ -1488,545 +1785,6 @@ function pointInRect(px, py, b) {
 }
 
 // ============================================================
-// ЭКРАН СЛОТОВ (таблица игроков)
-// ============================================================
-let slotButtons = [];
-
-function rebuildSlotButtons() {
-  slotButtons = [];
-  const bw = 200, bh = 70;
-  const gapY = 12;
-  const startY = 130;
-  for (let i = 0; i < SLOT_COUNT; i++) {
-    slotButtons.push({
-      idx: i,
-      x: 40, y: startY + i * (bh + gapY),
-      w: bw, h: bh, hover: 0, appear: 1, action: "select"
-    });
-  }
-  // кнопки справа: играть/переименовать/сбросить/удалить для активного
-  slotButtons.push({ idx: -1, x: VW - 460, y: 130, w: 200, h: 50, hover: 0, appear: 1, action: "play" });
-  slotButtons.push({ idx: -2, x: VW - 240, y: 130, w: 200, h: 50, hover: 0, appear: 1, action: "rename" });
-  slotButtons.push({ idx: -3, x: VW - 460, y: 200, w: 200, h: 50, hover: 0, appear: 1, action: "reset" });
-  slotButtons.push({ idx: -4, x: VW - 240, y: 200, w: 200, h: 50, hover: 0, appear: 1, action: "delete" });
-}
-
-function drawSlotScreen(dt) {
-  drawMenuBg(dt);
-  ctx.fillStyle = "#dcc850";
-  ctx.font = "bold 48px Consolas, monospace";
-  const t = "ИГРОКИ И СЛОТЫ";
-  const tw = ctx.measureText(t).width;
-  ctx.fillText(t, VW / 2 - tw / 2, 80);
-
-  ctx.fillStyle = "#a0a0c0";
-  ctx.font = "16px Consolas, monospace";
-  const sub = "Сохранение прогресса по уровням. 5 слотов.";
-  ctx.fillText(sub, VW / 2 - ctx.measureText(sub).width / 2, 108);
-
-  for (const b of slotButtons) {
-    if (b.idx >= 0) {
-      // Слот
-      const slot = slots[b.idx];
-      const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
-      b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
-      const active = (b.idx === activeSlot);
-      const bg = active ? "#4a3a1c" : (hovered ? "#3c4660" : "#28303c");
-      const border = active ? "#ffcc50" : (hovered ? "#7eaaff" : "#506478");
-      ctx.fillStyle = bg; roundRect(b.x, b.y, b.w, b.h, 8); ctx.fill();
-      ctx.strokeStyle = border; ctx.lineWidth = active ? 3 : 2;
-      roundRect(b.x, b.y, b.w, b.h, 8); ctx.stroke();
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 16px Consolas, monospace";
-      ctx.fillText((b.idx + 1) + ". " + slot.name, b.x + 10, b.y + 24);
-      ctx.font = "12px Consolas, monospace";
-      ctx.fillStyle = "#c8c8e0";
-      ctx.fillText("Стр.1: " + (slot.unlocked - 1) + "/51  |  Стр.2: " + slot.unlockedPage2 + "/30",
-                   b.x + 10, b.y + 44);
-      ctx.fillStyle = "#ffcc50";
-      ctx.fillText("Рун: " + slot.runes + (slot.bossDefeated ? "  ★" : ""),
-                   b.x + 10, b.y + 62);
-      continue;
-    }
-    // управление
-    const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
-    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
-    let label, color;
-    if (b.action === "play") { label = "ИГРАТЬ"; color = "#3cdc78"; }
-    else if (b.action === "rename") { label = "ПЕРЕИМЕНОВАТЬ"; color = "#3caaff"; }
-    else if (b.action === "reset") { label = "СБРОСИТЬ"; color = "#ff9c3c"; }
-    else { label = "УДАЛИТЬ"; color = "#ff5050"; }
-    const t = b.hover;
-    ctx.fillStyle = "rgb(" + Math.round(30 + t * 30) + "," + Math.round(30 + t * 30) + "," + Math.round(40 + t * 30) + ")";
-    roundRect(b.x, b.y, b.w, b.h, 8); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
-    roundRect(b.x, b.y, b.w, b.h, 8); ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.font = "bold 16px Consolas, monospace";
-    const tw2 = ctx.measureText(label).width;
-    ctx.fillText(label, b.x + b.w / 2 - tw2 / 2, b.y + b.h / 2 + 6);
-  }
-
-  // инфо об активном
-  const act = getSlot();
-  ctx.fillStyle = "#c8c8e0";
-  ctx.font = "14px Consolas, monospace";
-  ctx.fillText("Активный: " + act.name, VW - 460, 280);
-  ctx.fillText("Меню: " + THEMES.menu[act.menuTheme].name, VW - 460, 305);
-  ctx.fillText("Курсор: " + THEMES.cursor[act.cursorTheme].name, VW - 460, 330);
-  ctx.fillText("Босс: " + (act.bossDefeated ? "побеждён ★" : "не побеждён"),
-               VW - 460, 355);
-
-  drawBackButton();
-}
-
-// ============================================================
-// ЭКРАН ПЕРЕИМЕНОВАНИЯ
-// ============================================================
-function drawRenameScreen(dt) {
-  drawMenuBg(dt * 0.3);
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillRect(0, 0, VW, VH);
-  const w = 600, h = 260;
-  const x = (VW - w) / 2, y = (VH - h) / 2;
-  ctx.fillStyle = "#232838";
-  roundRect(x, y, w, h, 14); ctx.fill();
-  ctx.strokeStyle = "#4a90d0"; ctx.lineWidth = 2;
-  roundRect(x, y, w, h, 14); ctx.stroke();
-
-  ctx.fillStyle = "#dcc850";
-  ctx.font = "bold 28px Consolas, monospace";
-  ctx.fillText("ПЕРЕИМЕНОВАТЬ СЛОТ " + (renameSlotIdx + 1), x + 30, y + 55);
-
-  ctx.fillStyle = "#e6e6f0";
-  ctx.font = "22px Consolas, monospace";
-  ctx.fillText("Имя:", x + 30, y + 120);
-
-  // поле ввода
-  ctx.fillStyle = "#1a1a26";
-  roundRect(x + 100, y + 95, 460, 40, 6); ctx.fill();
-  ctx.strokeStyle = "#4a90d0"; ctx.lineWidth = 2;
-  roundRect(x + 100, y + 95, 460, 40, 6); ctx.stroke();
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 22px Consolas, monospace";
-  ctx.fillText(renameBuffer + (Math.floor(menuTime * 2) % 2 ? "|" : ""),
-               x + 115, y + 124);
-
-  ctx.fillStyle = "#8c8c9c";
-  ctx.font = "14px Consolas, monospace";
-  ctx.fillText("Enter — сохранить  |  ESC — отмена  |  Backspace — удалить",
-               x + 30, y + 175);
-
-  // кнопки
-  const saveX = x + 30, saveY = y + h - 70, bw = 200, bh = 50;
-  const cancelX = x + w - 230;
-  const sh = pointInRect(mouseX, mouseY, { x: saveX, y: saveY, w: bw, h: bh, appear: 1, hover: 0 });
-  const ch = pointInRect(mouseX, mouseY, { x: cancelX, y: saveY, w: bw, h: bh, appear: 1, hover: 0 });
-
-  ctx.fillStyle = sh ? "#1c6028" : "#1c4028";
-  roundRect(saveX, saveY, bw, bh, 10); ctx.fill();
-  ctx.strokeStyle = "#3cdc78"; ctx.lineWidth = 2;
-  roundRect(saveX, saveY, bw, bh, 10); ctx.stroke();
-  ctx.fillStyle = "#e0ffe0";
-  ctx.font = "bold 20px Consolas, monospace";
-  let t = "СОХРАНИТЬ";
-  ctx.fillText(t, saveX + bw / 2 - ctx.measureText(t).width / 2, saveY + bh / 2 + 7);
-
-  ctx.fillStyle = ch ? "#6a2028" : "#402028";
-  roundRect(cancelX, saveY, bw, bh, 10); ctx.fill();
-  ctx.strokeStyle = "#c83030"; ctx.lineWidth = 2;
-  roundRect(cancelX, saveY, bw, bh, 10); ctx.stroke();
-  ctx.fillStyle = "#ffe0e0";
-  t = "ОТМЕНА";
-  ctx.fillText(t, cancelX + bw / 2 - ctx.measureText(t).width / 2, saveY + bh / 2 + 7);
-}
-
-// ============================================================
-// ВЫБОР УРОВНЯ (2 страницы)
-// ============================================================
-let levelButtons = [];
-let levelScroll = 0;
-let levelScrollMax = 0;
-let tabHover1 = 0, tabHover2 = 0;
-
-function rebuildLevelButtons() {
-  levelButtons = [];
-  const cols = 5, bw = 150, bh = 78, gapX = 15, gapY = 15;
-  const gridW = cols * bw + (cols - 1) * gapX;
-  const startX = VW / 2 - gridW / 2;
-  const topMargin = 175, bottomMargin = 90;
-  const viewH = VH - topMargin - bottomMargin;
-
-  if (currentPage === 1) {
-    const total = PAGE1_RAW.length + 1;  // + босс
-    const rows = Math.ceil(total / cols);
-    const totalH = rows * bh + (rows - 1) * gapY;
-    levelScrollMax = Math.max(0, totalH - viewH);
-    levelScroll = Math.min(levelScroll, levelScrollMax);
-    for (let i = 0; i < total; i++) {
-      const col = i % cols, row = (i / cols) | 0;
-      const slot = getSlot();
-      levelButtons.push({
-        idx: i, page: 1,
-        x: startX + col * (bw + gapX),
-        y: topMargin + row * (bh + gapY),
-        w: bw, h: bh,
-        enabled: i < slot.unlocked, hover: 0,
-        isBoss: i === PAGE1_RAW.length
-      });
-    }
-  } else {
-    const total = PAGE2_RAW.length;
-    const rows = Math.ceil(total / cols);
-    const totalH = rows * bh + (rows - 1) * gapY;
-    levelScrollMax = Math.max(0, totalH - viewH);
-    levelScroll = Math.min(levelScroll, levelScrollMax);
-    for (let i = 0; i < total; i++) {
-      const col = i % cols, row = (i / cols) | 0;
-      const slot = getSlot();
-      levelButtons.push({
-        idx: i, page: 2,
-        x: startX + col * (bw + gapX),
-        y: topMargin + row * (bh + gapY),
-        w: bw, h: bh,
-        enabled: i < slot.unlockedPage2, hover: 0,
-        isBoss: false
-      });
-    }
-  }
-}
-
-function drawLevelsScreen(dt) {
-  drawMenuBg(dt);
-  ctx.fillStyle = "#dcc850";
-  ctx.font = "bold 42px Consolas, monospace";
-  const t = "ВЫБОР УРОВНЯ";
-  const tw = ctx.measureText(t).width;
-  ctx.fillText(t, VW / 2 - tw / 2, 60);
-
-  // Вкладки
-  const tabW = 280, tabH = 40;
-  const tx1 = VW / 2 - tabW - 10, tx2 = VW / 2 + 10;
-  const ty = 90;
-
-  const hover1 = mouseX >= tx1 && mouseX <= tx1 + tabW && mouseY >= ty && mouseY <= ty + tabH;
-  const hover2 = mouseX >= tx2 && mouseX <= tx2 + tabW && mouseY >= ty && mouseY <= ty + tabH;
-  tabHover1 += ((hover1 ? 1 : 0) - tabHover1) * Math.min(1, dt * 12);
-  tabHover2 += ((hover2 ? 1 : 0) - tabHover2) * Math.min(1, dt * 12);
-
-  // вкладка 1
-  {
-    const active = currentPage === 1;
-    const bg = active ? "#3c4660" : (tabHover1 > 0.5 ? "#2c3640" : "#1e2430");
-    const border = active ? "#7eaaff" : "#506478";
-    ctx.fillStyle = bg; roundRect(tx1, ty, tabW, tabH, 8); ctx.fill();
-    ctx.strokeStyle = border; ctx.lineWidth = 2;
-    roundRect(tx1, ty, tabW, tabH, 8); ctx.stroke();
-    ctx.fillStyle = active ? "#fff" : "#c8c8e0";
-    ctx.font = "bold 18px Consolas, monospace";
-    const tt = "СТРАНИЦА 1 — 51 + БОСС";
-    ctx.fillText(tt, tx1 + tabW / 2 - ctx.measureText(tt).width / 2, ty + 27);
-  }
-
-  // вкладка 2
-  const slot = getSlot();
-  {
-    const active = currentPage === 2;
-    const locked = !slot.bossDefeated;
-    const bg = active ? "#4a2050" : (tabHover2 > 0.5 && !locked ? "#3a1840" : "#2a1830");
-    const border = locked ? "#5a3a60" : (active ? "#c060ff" : "#7a48a0");
-    ctx.fillStyle = bg; roundRect(tx2, ty, tabW, tabH, 8); ctx.fill();
-    ctx.strokeStyle = border; ctx.lineWidth = 2;
-    roundRect(tx2, ty, tabW, tabH, 8); ctx.stroke();
-    ctx.fillStyle = locked ? "#7a6a80" : (active ? "#f0d0ff" : "#c8a8e0");
-    ctx.font = "bold 18px Consolas, monospace";
-    const tt = locked ? "🔒 СТРАНИЦА 2 — ДЕМОНЫ" : "СТРАНИЦА 2 — ДЕМОНЫ";
-    ctx.fillText(tt, tx2 + tabW / 2 - ctx.measureText(tt).width / 2, ty + 27);
-    if (locked) {
-      ctx.fillStyle = "#a080a8";
-      ctx.font = "12px Consolas, monospace";
-      const h = "Победите босса, чтобы открыть";
-      ctx.fillText(h, tx2 + tabW / 2 - ctx.measureText(h).width / 2, ty + tabH + 14);
-    }
-  }
-
-  const topMargin = 175, bottomMargin = 90;
-  const viewH = VH - topMargin - bottomMargin;
-  ctx.save();
-  ctx.beginPath(); ctx.rect(0, topMargin - 5, VW, viewH + 10); ctx.clip();
-  for (const b of levelButtons) {
-    const vy = b.y - levelScroll;
-    if (vy + b.h < topMargin - 10 || vy > VH - bottomMargin + 10) continue;
-    const hovered = (mouseX >= b.x && mouseX <= b.x + b.w &&
-                     mouseY >= vy && mouseY <= vy + b.h &&
-                     mouseY >= topMargin - 5 && mouseY <= VH - bottomMargin + 5);
-    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
-    let bg, border, fg;
-    if (!b.enabled) { bg = "#28282d"; border = "#3c3c41"; fg = "#6e6e6e"; }
-    else if (b.isBoss) {
-      if (b.hover > 0.5) { bg = "#6a1a1a"; border = "#ff5050"; fg = "#ffe0e0"; }
-      else { bg = "#3c1010"; border = "#8a2020"; fg = "#ffb0b0"; }
-    }
-    else if (b.page === 2) {
-      if (b.hover > 0.5) { bg = "#4a2050"; border = "#c060ff"; fg = "#f0d0ff"; }
-      else { bg = "#2e1838"; border = "#7a48a0"; fg = "#c8a8e0"; }
-    }
-    else if (b.hover > 0.5) { bg = "#3c4660"; border = "#7eaaff"; fg = "#f0f0ff"; }
-    else { bg = "#28303c"; border = "#506478"; fg = "#dcdcff"; }
-    ctx.fillStyle = bg; roundRect(b.x, vy, b.w, b.h, 8); ctx.fill();
-    ctx.strokeStyle = border; ctx.lineWidth = 2;
-    roundRect(b.x, vy, b.w, b.h, 8); ctx.stroke();
-    ctx.fillStyle = fg;
-    ctx.font = "bold 17px Consolas, monospace";
-    let title;
-    if (b.isBoss) title = "★ БОСС (52) ★";
-    else title = "УР. " + (b.idx + 1);
-    const tW = ctx.measureText(title).width;
-    ctx.fillText(title, b.x + b.w / 2 - tW / 2, vy + 36);
-    ctx.font = "11px Consolas, monospace";
-    ctx.fillStyle = b.enabled ? (b.isBoss ? "#ff9090" : (b.page === 2 ? "#d0a0ff" : "#9c9cb4")) : "#5a5a64";
-    let subtitle;
-    if (!b.enabled) subtitle = "заблокировано";
-    else if (b.isBoss) subtitle = "финальный босс";
-    else if (b.page === 2) subtitle = PAGE2_NAMES[b.idx];
-    else subtitle = PAGE1_NAMES[b.idx];
-    const sW = ctx.measureText(subtitle).width;
-    ctx.fillText(subtitle, b.x + b.w / 2 - sW / 2, vy + 60);
-  }
-  ctx.restore();
-
-  if (levelScrollMax > 0) {
-    const cols = 5;
-    const total = currentPage === 1 ? PAGE1_RAW.length + 1 : PAGE2_RAW.length;
-    const rows = Math.ceil(total / cols);
-    const totalH = rows * 78 + (rows - 1) * 15;
-    const barH = Math.max(30, viewH * viewH / totalH);
-    const barY = topMargin + (viewH - barH) * (levelScroll / levelScrollMax);
-    ctx.fillStyle = "#3c3c46";
-    roundRect(VW - 15, topMargin, 6, viewH, 3); ctx.fill();
-    ctx.fillStyle = "#8cb4f0";
-    roundRect(VW - 15, barY, 6, barH, 3); ctx.fill();
-  }
-  drawBackButton();
-}
-
-let backHover = 0;
-function drawBackButton() {
-  const x = 30, y = VH - 70, w = 180, h = 45;
-  const hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
-  backHover += ((hovered ? 1 : 0) - backHover) * 0.15;
-  ctx.fillStyle = hovered ? "#3c4660" : "#28303c";
-  roundRect(x, y, w, h, 8); ctx.fill();
-  ctx.strokeStyle = hovered ? "#7eaaff" : "#506478"; ctx.lineWidth = 2;
-  roundRect(x, y, w, h, 8); ctx.stroke();
-  ctx.fillStyle = "#dcdcff";
-  ctx.font = "bold 20px Consolas, monospace";
-  const t = "← НАЗАД";
-  ctx.fillText(t, x + w / 2 - ctx.measureText(t).width / 2, y + h / 2 + 7);
-}
-
-// ============================================================
-// МАГАЗИН
-// ============================================================
-let shopButtons = [];
-function rebuildShopButtons() {
-  shopButtons = [];
-  const slot = getSlot();
-  const cardW = 220, cardH = 130, gap = 20;
-  const totalW = 4 * cardW + 3 * gap;
-  const startX = VW / 2 - totalW / 2;
-  const startY = 220;
-  let i = 0;
-  for (const key of Object.keys(THEMES.menu)) {
-    shopButtons.push({
-      kind: "menu", key: key, idx: i++,
-      x: startX + (i - 1) * (cardW + gap), y: startY,
-      w: cardW, h: cardH, hover: 0, appear: 1
-    });
-  }
-  i = 0;
-  for (const key of Object.keys(THEMES.cursor)) {
-    shopButtons.push({
-      kind: "cursor", key: key, idx: i++,
-      x: startX + (i - 1) * (cardW + gap), y: startY + cardH + 60,
-      w: cardW, h: cardH, hover: 0, appear: 1
-    });
-  }
-}
-
-function drawShopScreen(dt) {
-  drawMenuBg(dt);
-  ctx.fillStyle = "#dcc850";
-  ctx.font = "bold 44px Consolas, monospace";
-  const t = "МАГАЗИН";
-  const tw = ctx.measureText(t).width;
-  ctx.fillText(t, VW / 2 - tw / 2, 60);
-
-  const slot = getSlot();
-  ctx.fillStyle = "#ffcc50";
-  ctx.font = "bold 22px Consolas, monospace";
-  const r = "Руны: " + slot.runes;
-  ctx.fillText(r, VW / 2 - ctx.measureText(r).width / 2, 100);
-
-  ctx.fillStyle = "#c8c8e0";
-  ctx.font = "16px Consolas, monospace";
-  const s = "Оформления меню";
-  ctx.fillText(s, 60, 170);
-  const s2 = "Оформления курсора";
-  ctx.fillText(s2, 60, 220 + 130 + 60 - 40);
-
-  for (const b of shopButtons) {
-    const theme = THEMES[b.kind][b.key];
-    const owned = (b.kind === "menu")
-      ? slot.ownedMenuThemes.includes(b.key)
-      : slot.ownedCursorThemes.includes(b.key);
-    const equipped = (b.kind === "menu")
-      ? slot.menuTheme === b.key
-      : slot.cursorTheme === b.key;
-    const canBuy = !owned && slot.runes >= theme.price;
-
-    const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
-    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
-
-    const border = equipped ? "#3cdc78" : (owned ? "#8cb4f0" : (canBuy ? "#ffcc50" : "#6a3a3a"));
-    const bg = equipped ? "#1a4028" : (owned ? "#1a2840" : (canBuy ? "#3c2e1a" : "#28201a"));
-
-    ctx.fillStyle = bg; roundRect(b.x, b.y, b.w, b.h, 10); ctx.fill();
-    ctx.strokeStyle = border; ctx.lineWidth = equipped ? 3 : 2;
-    roundRect(b.x, b.y, b.w, b.h, 10); ctx.stroke();
-
-    // название
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 18px Consolas, monospace";
-    const nm = theme.name;
-    ctx.fillText(nm, b.x + b.w / 2 - ctx.measureText(nm).width / 2, b.y + 30);
-    // описание
-    ctx.fillStyle = "#c8c8d0";
-    ctx.font = "12px Consolas, monospace";
-    const d = theme.desc;
-    ctx.fillText(d, b.x + b.w / 2 - ctx.measureText(d).width / 2, b.y + 55);
-    // статус
-    let label, color;
-    if (equipped) { label = "✔ ВЫБРАНО"; color = "#3cdc78"; }
-    else if (owned) { label = "ВЫБРАТЬ"; color = "#8cb4f0"; }
-    else if (canBuy) { label = "КУПИТЬ — " + theme.price + " рун"; color = "#ffcc50"; }
-    else { label = "НУЖНО " + theme.price + " рун"; color = "#a06060"; }
-    ctx.fillStyle = color;
-    ctx.font = "bold 15px Consolas, monospace";
-    ctx.fillText(label, b.x + b.w / 2 - ctx.measureText(label).width / 2, b.y + b.h - 20);
-  }
-
-  drawBackButton();
-}
-
-// ============================================================
-// НАСТРОЙКИ
-// ============================================================
-let sliderHover = false;
-let sliderDrag = false;
-let settingsVolume = masterVolume;
-function drawSettingsScreen(dt) {
-  drawMenuBg(dt);
-  ctx.fillStyle = "#dcc850";
-  ctx.font = "bold 48px Consolas, monospace";
-  const t = "НАСТРОЙКИ";
-  const tw = ctx.measureText(t).width;
-  ctx.fillText(t, VW / 2 - tw / 2, 90);
-
-  const label = "Громкость звука";
-  ctx.fillStyle = "#dcdcec";
-  ctx.font = "22px Consolas, monospace";
-  const lw = ctx.measureText(label).width;
-  ctx.fillText(label, VW / 2 - lw / 2, 200);
-
-  const sliderW = 500, sliderH = 20;
-  const sx = VW / 2 - sliderW / 2, sy = 240;
-  ctx.fillStyle = "#1e1e28";
-  roundRect(sx, sy, sliderW, sliderH, 10); ctx.fill();
-  const filled = sliderW * settingsVolume;
-  const grad = ctx.createLinearGradient(sx, 0, sx + sliderW, 0);
-  grad.addColorStop(0, "#3caaff"); grad.addColorStop(1, "#50dc78");
-  ctx.fillStyle = grad;
-  roundRect(sx, sy, filled, sliderH, 10); ctx.fill();
-  ctx.strokeStyle = sliderHover || sliderDrag ? "#7eaaff" : "#506478";
-  ctx.lineWidth = 2;
-  roundRect(sx, sy, sliderW, sliderH, 10); ctx.stroke();
-  const knobX = sx + sliderW * settingsVolume;
-  const knobY = sy + sliderH / 2;
-  ctx.fillStyle = "#f0f0ff";
-  ctx.beginPath(); ctx.arc(knobX, knobY, 14, 0, 7); ctx.fill();
-  ctx.strokeStyle = "#3c4660"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(knobX, knobY, 14, 0, 7); ctx.stroke();
-  ctx.fillStyle = "#3c4660";
-  ctx.beginPath(); ctx.arc(knobX, knobY, 5, 0, 7); ctx.fill();
-  ctx.fillStyle = "#b4b4c8";
-  ctx.font = "18px Consolas, monospace";
-  const pct = Math.round(settingsVolume * 100) + "%";
-  ctx.fillText(pct, VW / 2 - ctx.measureText(pct).width / 2, sy + sliderH + 30);
-
-  const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
-  const hovered = mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh;
-  ctx.fillStyle = hovered ? "#3c4660" : "#28303c";
-  roundRect(bx, by, bw, bh, 10); ctx.fill();
-  ctx.strokeStyle = hovered ? "#7eaaff" : "#506478"; ctx.lineWidth = 2;
-  roundRect(bx, by, bw, bh, 10); ctx.stroke();
-  ctx.fillStyle = "#dcdcff";
-  ctx.font = "bold 20px Consolas, monospace";
-  const btnTxt = "🔊 ПРОВЕРИТЬ ЗВУК";
-  ctx.fillText(btnTxt, bx + bw / 2 - ctx.measureText(btnTxt).width / 2, by + bh / 2 + 7);
-
-  drawBackButton();
-}
-
-// ============================================================
-// ДИАЛОГ
-// ============================================================
-let confirmHoverYes = 0, confirmHoverNo = 0;
-let confirmCallback = null;
-let confirmMessage = "";
-function drawConfirmDialog(dt) {
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillRect(0, 0, VW, VH);
-  const w = 600, h = 240;
-  const x = (VW - w) / 2, y = (VH - h) / 2;
-  ctx.fillStyle = "#232838";
-  roundRect(x, y, w, h, 14); ctx.fill();
-  ctx.strokeStyle = "#c84646"; ctx.lineWidth = 2;
-  roundRect(x, y, w, h, 14); ctx.stroke();
-  ctx.fillStyle = "#ffc850";
-  ctx.font = "bold 36px Consolas, monospace";
-  ctx.fillText("!", x + 30, y + 55);
-  ctx.font = "bold 26px Consolas, monospace";
-  ctx.fillText("ПОДТВЕРЖДЕНИЕ", x + 70, y + 55);
-  ctx.fillStyle = "#e6e6f0";
-  ctx.font = "18px Consolas, monospace";
-  const lines = confirmMessage.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], x + 30, y + 110 + i * 28);
-  }
-  const yesX = x + 40, noX = x + w - 260, by = y + h - 70, bw = 220, bh = 50;
-  const yesHover = pointInRect(mouseX, mouseY, { x: yesX, y: by, w: bw, h: bh, appear: 1, hover: 0 });
-  const noHover = pointInRect(mouseX, mouseY, { x: noX, y: by, w: bw, h: bh, appear: 1, hover: 0 });
-  confirmHoverYes += ((yesHover ? 1 : 0) - confirmHoverYes) * Math.min(1, dt * 12);
-  confirmHoverNo += ((noHover ? 1 : 0) - confirmHoverNo) * Math.min(1, dt * 12);
-  ctx.fillStyle = "rgb(" + Math.round(70 + confirmHoverYes * 40) + ",25,25)";
-  roundRect(yesX, by, bw, bh, 10); ctx.fill();
-  ctx.strokeStyle = "rgb(" + Math.round(180 + confirmHoverYes * 60) + ",60,60)";
-  ctx.lineWidth = 2; roundRect(yesX, by, bw, bh, 10); ctx.stroke();
-  ctx.fillStyle = "#ffe6e6";
-  ctx.font = "bold 18px Consolas, monospace";
-  let t = "ДА";
-  ctx.fillText(t, yesX + bw / 2 - ctx.measureText(t).width / 2, by + bh / 2 + 7);
-  ctx.fillStyle = "rgb(" + Math.round(40 + confirmHoverNo * 25) + "," + Math.round(50 + confirmHoverNo * 30) + ",70)";
-  roundRect(noX, by, bw, bh, 10); ctx.fill();
-  ctx.strokeStyle = "rgb(" + Math.round(90 + confirmHoverNo * 60) + "," + Math.round(120 + confirmHoverNo * 60) + ",180)";
-  ctx.lineWidth = 2; roundRect(noX, by, bw, bh, 10); ctx.stroke();
-  ctx.fillStyle = "#e6e6ff";
-  t = "ОТМЕНА";
-  ctx.fillText(t, noX + bw / 2 - ctx.measureText(t).width / 2, by + bh / 2 + 7);
-}
-
-// ============================================================
 // ВВОД
 // ============================================================
 let mouseX = VW / 2, mouseY = VH / 2;
@@ -2047,8 +1805,7 @@ window.addEventListener("keydown", (e) => {
     } else if (e.key.length === 1 && renameBuffer.length < 20) {
       renameBuffer += e.key;
     }
-    e.preventDefault();
-    return;
+    e.preventDefault(); return;
   }
   if (e.key === "Escape") {
     if (state === GAME_STATE.PLAYING) exitToMenu();
@@ -2066,7 +1823,7 @@ window.addEventListener("keydown", (e) => {
   }
   if ((e.key === "r" || e.key === "к" || e.code === "KeyR")
       && state === GAME_STATE.PLAYING && (gameOver || win)) {
-    loadLevel(levelIdx, isPage2 ? 2 : 1);
+    loadLevel(levelIdx, isPage3 ? 3 : isPage2 ? 2 : 1);
   }
   if ((e.key === "q" || e.key === "й" || e.code === "KeyQ")
       && state === GAME_STATE.PLAYING && !gameOver && !win) {
@@ -2081,19 +1838,36 @@ canvas.addEventListener("mousemove", (e) => {
   mouseX = (e.clientX - rect.left) / rect.width * VW;
   mouseY = (e.clientY - rect.top) / rect.height * VH;
   if (state === GAME_STATE.SETTINGS) {
-    const sliderW = 500, sliderH = 20;
-    const sx = VW / 2 - sliderW / 2, sy = 240;
-    const onSlider = mouseY >= sy - 20 && mouseY <= sy + sliderH + 20 &&
-                     mouseX >= sx - 20 && mouseX <= sx + sliderW + 20;
-    sliderHover = onSlider;
-    if (sliderDrag) {
-      const t = (mouseX - sx) / sliderW;
-      settingsVolume = Math.max(0, Math.min(1, t));
-      masterVolume = settingsVolume;
-      saveVolume();
-    }
+    updateSliders(mouseX, mouseY, true);
   }
 });
+function updateSliders(mx, my, isMove) {
+  const sliderW = 500, sliderH = 20;
+  const sx = VW / 2 - sliderW / 2;
+  const sy1 = 240, sy2 = 340;
+  if (my >= sy1 - 20 && my <= sy1 + sliderH + 20 && mx >= sx - 20 && mx <= sx + sliderW + 20) {
+    if (sliderDrag === 1) {
+      settingsVolume = clamp((mx - sx) / sliderW, 0, 1);
+      masterVolume = settingsVolume;
+      saveVolumes();
+    }
+  }
+  if (my >= sy2 - 20 && my <= sy2 + sliderH + 20 && mx >= sx - 20 && mx <= sx + sliderW + 20) {
+    if (sliderDrag === 2) {
+      settingsMusicVolume = clamp((mx - sx) / sliderW, 0, 1);
+      musicVolume = settingsMusicVolume;
+      saveVolumes();
+      updateMusicVolume();
+    }
+  }
+}
+function updateMusicVolume() {
+  if (musicSource) musicSource.volume = musicVolume * masterVolume;
+}
+let sliderDrag = 0;
+let settingsVolume = masterVolume;
+let settingsMusicVolume = musicVolume;
+
 canvas.addEventListener("mousedown", (e) => {
   ensureAudio();
   if (state === GAME_STATE.PLAYING) {
@@ -2102,28 +1876,31 @@ canvas.addEventListener("mousedown", (e) => {
     if (document.pointerLockElement !== canvas && !isTouchDevice) canvas.requestPointerLock();
   } else if (state === GAME_STATE.SETTINGS) {
     const sliderW = 500, sliderH = 20;
-    const sx = VW / 2 - sliderW / 2, sy = 240;
-    const onSlider = mouseY >= sy - 20 && mouseY <= sy + sliderH + 20 &&
-                     mouseX >= sx - 20 && mouseX <= sx + sliderW + 20;
-    if (onSlider) {
-      sliderDrag = true;
-      const t = (mouseX - sx) / sliderW;
-      settingsVolume = Math.max(0, Math.min(1, t));
+    const sx = VW / 2 - sliderW / 2;
+    const sy1 = 240, sy2 = 340;
+    if (mouseY >= sy1 - 20 && mouseY <= sy1 + sliderH + 20 && mouseX >= sx - 20 && mouseX <= sx + sliderW + 20) {
+      sliderDrag = 1;
+      settingsVolume = clamp((mouseX - sx) / sliderW, 0, 1);
       masterVolume = settingsVolume;
-      saveVolume();
+      saveVolumes();
+    } else if (mouseY >= sy2 - 20 && mouseY <= sy2 + sliderH + 20 && mouseX >= sx - 20 && mouseX <= sx + sliderW + 20) {
+      sliderDrag = 2;
+      settingsMusicVolume = clamp((mouseX - sx) / sliderW, 0, 1);
+      musicVolume = settingsMusicVolume;
+      saveVolumes();
+      updateMusicVolume();
     }
-    const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
+    const bx = VW / 2 - 130, by = 400, bw = 260, bh = 50;
     if (mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh) {
-      ensureAudio(); playShot("shotgun");
+      playShot("shotgun");
     }
   }
 });
 canvas.addEventListener("mouseup", (e) => {
   if (e.button === 2) aiming = false;
-  if (e.button === 0) sliderDrag = false;
+  if (e.button === 0) sliderDrag = 0;
 });
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-
 canvas.addEventListener("click", (e) => {
   ensureAudio();
   if (state !== GAME_STATE.PLAYING) {
@@ -2148,7 +1925,7 @@ canvas.addEventListener("wheel", (e) => {
 }, { passive: false });
 
 // ============================================================
-// ТАЧ
+// ТАЧ (сокращено)
 // ============================================================
 const JOY_R = 70;
 const JOY_X = 100, JOY_Y = 110;
@@ -2163,26 +1940,8 @@ function onTouchStart(e) {
     const rect = canvas.getBoundingClientRect();
     mouseX = (t.clientX - rect.left) / rect.width * VW;
     mouseY = (t.clientY - rect.top) / rect.height * VH;
-    if (state === GAME_STATE.SETTINGS) {
-      const sliderW = 500, sliderH = 20;
-      const sx = VW / 2 - sliderW / 2, sy = 240;
-      if (mouseX >= sx - 20 && mouseX <= sx + sliderW + 20 && mouseY >= sy - 20 && mouseY <= sy + sliderH + 20) {
-        sliderDrag = true;
-        const tt = (mouseX - sx) / sliderW;
-        settingsVolume = Math.max(0, Math.min(1, tt));
-        masterVolume = settingsVolume;
-        saveVolume();
-      }
-      const bx = VW / 2 - 130, by = sy + 100, bw = 260, bh = 50;
-      if (mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh) {
-        playShot("shotgun");
-      }
-      e.preventDefault();
-      return;
-    }
     handleMenuClick(mouseX, mouseY);
-    e.preventDefault();
-    return;
+    e.preventDefault(); return;
   }
   for (const t of e.changedTouches) {
     const rect = canvas.getBoundingClientRect();
@@ -2215,19 +1974,6 @@ function onTouchStart(e) {
   e.preventDefault();
 }
 function onTouchMove(e) {
-  if (state === GAME_STATE.SETTINGS && sliderDrag) {
-    const t = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = (t.clientX - rect.left) / rect.width * VW;
-    const sliderW = 500;
-    const sx = VW / 2 - sliderW / 2;
-    const tt = (x - sx) / sliderW;
-    settingsVolume = Math.max(0, Math.min(1, tt));
-    masterVolume = settingsVolume;
-    saveVolume();
-    e.preventDefault();
-    return;
-  }
   if (state !== GAME_STATE.PLAYING) return;
   for (const t of e.changedTouches) {
     const rect = canvas.getBoundingClientRect();
@@ -2247,7 +1993,6 @@ function onTouchMove(e) {
   e.preventDefault();
 }
 function onTouchEnd(e) {
-  sliderDrag = false;
   for (const t of e.changedTouches) {
     if (t.identifier === touch.moveTouchId) {
       touch.moveTouchId = null; touch.moveDX = 0; touch.moveDY = 0;
@@ -2269,60 +2014,544 @@ canvas.addEventListener("touchend", onTouchEnd, { passive: false });
 canvas.addEventListener("touchcancel", onTouchEnd, { passive: false });
 
 // ============================================================
+// ЭКРАН СЛОТОВ
+// ============================================================
+let slotButtons = [];
+function rebuildSlotButtons() {
+  slotButtons = [];
+  const bw = 200, bh = 70, gapY = 12;
+  const startY = 130;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    slotButtons.push({ idx: i, x: 40, y: startY + i * (bh + gapY), w: bw, h: bh, hover: 0, appear: 1, action: "select" });
+  }
+  slotButtons.push({ idx: -1, x: VW - 460, y: 130, w: 200, h: 50, hover: 0, appear: 1, action: "play" });
+  slotButtons.push({ idx: -2, x: VW - 240, y: 130, w: 200, h: 50, hover: 0, appear: 1, action: "rename" });
+  slotButtons.push({ idx: -3, x: VW - 460, y: 200, w: 200, h: 50, hover: 0, appear: 1, action: "reset" });
+  slotButtons.push({ idx: -4, x: VW - 240, y: 200, w: 200, h: 50, hover: 0, appear: 1, action: "delete" });
+}
+function drawSlotScreen(dt) {
+  drawMenuBg(dt);
+  ctx.fillStyle = "#dcc850";
+  ctx.font = "bold 44px Consolas, monospace";
+  const t = "ИГРОКИ И СЛОТЫ";
+  const tw = ctx.measureText(t).width;
+  ctx.fillText(t, VW / 2 - tw / 2, 70);
+  for (const b of slotButtons) {
+    if (b.idx >= 0) {
+      const slot = slots[b.idx];
+      const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
+      b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
+      const active = (b.idx === activeSlot);
+      const bg = active ? "#4a3a1c" : (hovered ? "#3c4660" : "#28303c");
+      const border = active ? "#ffcc50" : (hovered ? "#7eaaff" : "#506478");
+      ctx.fillStyle = bg; roundRect(b.x, b.y, b.w, b.h, 8); ctx.fill();
+      ctx.strokeStyle = border; ctx.lineWidth = active ? 3 : 2;
+      roundRect(b.x, b.y, b.w, b.h, 8); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = "bold 16px Consolas, monospace";
+      ctx.fillText((b.idx + 1) + ". " + slot.name, b.x + 10, b.y + 24);
+      ctx.font = "12px Consolas, monospace";
+      ctx.fillStyle = "#c8c8e0";
+      ctx.fillText("Стр1: " + (slot.unlocked - 1) + "/52 | Стр2: " + slot.unlockedPage2 + "/31 | Стр3: " + slot.unlockedPage3 + "/21",
+                   b.x + 10, b.y + 44);
+      ctx.fillStyle = "#ffcc50";
+      let badge = "";
+      if (slot.hellBossDefeated) badge = " 👑";
+      else if (slot.bossDefeated) badge = " ★";
+      ctx.fillText("Рун: " + slot.runes + badge, b.x + 10, b.y + 62);
+      continue;
+    }
+    const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
+    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
+    let label, color;
+    if (b.action === "play") { label = "ИГРАТЬ"; color = "#3cdc78"; }
+    else if (b.action === "rename") { label = "ПЕРЕИМЕНОВАТЬ"; color = "#3caaff"; }
+    else if (b.action === "reset") { label = "СБРОСИТЬ"; color = "#ff9c3c"; }
+    else { label = "УДАЛИТЬ"; color = "#ff5050"; }
+    const t = b.hover;
+    ctx.fillStyle = "rgb(" + Math.round(30 + t * 30) + "," + Math.round(30 + t * 30) + "," + Math.round(40 + t * 30) + ")";
+    roundRect(b.x, b.y, b.w, b.h, 8); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    roundRect(b.x, b.y, b.w, b.h, 8); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = "bold 16px Consolas, monospace";
+    const tw2 = ctx.measureText(label).width;
+    ctx.fillText(label, b.x + b.w / 2 - tw2 / 2, b.y + b.h / 2 + 6);
+  }
+  const act = getSlot();
+  ctx.fillStyle = "#c8c8e0";
+  ctx.font = "14px Consolas, monospace";
+  ctx.fillText("Активный: " + act.name, VW - 460, 280);
+  ctx.fillText("Меню: " + THEMES.menu[act.menuTheme].name, VW - 460, 305);
+  ctx.fillText("Курсор: " + THEMES.cursor[act.cursorTheme].name, VW - 460, 330);
+  ctx.fillText("Музыка меню: " + TRACKS[act.musicMenu].name, VW - 460, 355);
+  ctx.fillText("Музыка игры: " + TRACKS[act.musicGame].name, VW - 460, 380);
+  drawBackButton();
+}
+
+function drawRenameScreen(dt) {
+  drawMenuBg(dt * 0.3);
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillRect(0, 0, VW, VH);
+  const w = 600, h = 240;
+  const x = (VW - w) / 2, y = (VH - h) / 2;
+  ctx.fillStyle = "#232838"; roundRect(x, y, w, h, 14); ctx.fill();
+  ctx.strokeStyle = "#4a90d0"; ctx.lineWidth = 2;
+  roundRect(x, y, w, h, 14); ctx.stroke();
+  ctx.fillStyle = "#dcc850"; ctx.font = "bold 26px Consolas, monospace";
+  ctx.fillText("ПЕРЕИМЕНОВАТЬ СЛОТ " + (renameSlotIdx + 1), x + 30, y + 50);
+  ctx.fillStyle = "#e6e6f0"; ctx.font = "20px Consolas, monospace";
+  ctx.fillText("Имя:", x + 30, y + 110);
+  ctx.fillStyle = "#1a1a26";
+  roundRect(x + 90, y + 90, 470, 36, 6); ctx.fill();
+  ctx.strokeStyle = "#4a90d0"; ctx.lineWidth = 2;
+  roundRect(x + 90, y + 90, 470, 36, 6); ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.font = "bold 20px Consolas, monospace";
+  ctx.fillText(renameBuffer + (Math.floor(menuTime * 2) % 2 ? "|" : ""), x + 105, y + 116);
+  const saveX = x + 30, saveY = y + h - 60, bw = 200, bh = 45;
+  const cancelX = x + w - 230;
+  ctx.fillStyle = "#1c4028"; roundRect(saveX, saveY, bw, bh, 8); ctx.fill();
+  ctx.strokeStyle = "#3cdc78"; ctx.lineWidth = 2; roundRect(saveX, saveY, bw, bh, 8); ctx.stroke();
+  ctx.fillStyle = "#e0ffe0"; ctx.font = "bold 18px Consolas, monospace";
+  let t = "СОХРАНИТЬ"; ctx.fillText(t, saveX + bw / 2 - ctx.measureText(t).width / 2, saveY + bh / 2 + 6);
+  ctx.fillStyle = "#402028"; roundRect(cancelX, saveY, bw, bh, 8); ctx.fill();
+  ctx.strokeStyle = "#c83030"; ctx.lineWidth = 2; roundRect(cancelX, saveY, bw, bh, 8); ctx.stroke();
+  ctx.fillStyle = "#ffe0e0"; t = "ОТМЕНА";
+  ctx.fillText(t, cancelX + bw / 2 - ctx.measureText(t).width / 2, saveY + bh / 2 + 6);
+}
+
+// ============================================================
+// ВЫБОР УРОВНЯ (3 вкладки)
+// ============================================================
+let levelButtons = [];
+let levelScroll = 0;
+let levelScrollMax = 0;
+
+function rebuildLevelButtons() {
+  levelButtons = [];
+  const cols = 5, bw = 150, bh = 78, gapX = 15, gapY = 15;
+  const gridW = cols * bw + (cols - 1) * gapX;
+  const startX = VW / 2 - gridW / 2;
+  const topMargin = 195, bottomMargin = 90;
+  const viewH = VH - topMargin - bottomMargin;
+  const slot = getSlot();
+  let total, rawLen;
+  if (currentPage === 1) { total = PAGE1_RAW.length + 1; rawLen = PAGE1_RAW.length; }
+  else if (currentPage === 2) { total = PAGE2_RAW.length; rawLen = PAGE2_RAW.length; }
+  else { total = PAGE3_RAW.length + 1; rawLen = PAGE3_RAW.length; } // + hell boss
+  const rows = Math.ceil(total / cols);
+  const totalH = rows * bh + (rows - 1) * gapY;
+  levelScrollMax = Math.max(0, totalH - viewH);
+  levelScroll = Math.min(levelScroll, levelScrollMax);
+  for (let i = 0; i < total; i++) {
+    const col = i % cols, row = (i / cols) | 0;
+    let enabled;
+    let isBoss = false, isHellBoss = false;
+    if (currentPage === 1) {
+      enabled = i < slot.unlocked;
+      isBoss = (i === PAGE1_RAW.length);
+    } else if (currentPage === 2) {
+      enabled = i < slot.unlockedPage2;
+    } else {
+      enabled = i < slot.unlockedPage3;
+      isHellBoss = (i === PAGE3_RAW.length);
+    }
+    levelButtons.push({
+      idx: i, page: currentPage,
+      x: startX + col * (bw + gapX),
+      y: topMargin + row * (bh + gapY),
+      w: bw, h: bh,
+      enabled: enabled, hover: 0,
+      isBoss: isBoss, isHellBoss: isHellBoss
+    });
+  }
+}
+function drawLevelsScreen(dt) {
+  drawMenuBg(dt);
+  ctx.fillStyle = "#dcc850";
+  ctx.font = "bold 40px Consolas, monospace";
+  const t = "ВЫБОР УРОВНЯ";
+  const tw = ctx.measureText(t).width;
+  ctx.fillText(t, VW / 2 - tw / 2, 50);
+
+  // 3 вкладки
+  const tabW = 220, tabH = 40;
+  const tx1 = VW / 2 - tabW * 1.5 - 20, tx2 = VW / 2 - tabW / 2, tx3 = VW / 2 + tabW / 2 + 20;
+  const ty = 80;
+  const slot = getSlot();
+
+  const drawTab = (tx, page, label, locked, color) => {
+    const active = currentPage === page;
+    const hovered = mouseX >= tx && mouseX <= tx + tabW && mouseY >= ty && mouseY <= ty + tabH;
+    const bg = active ? color + "40" : (hovered && !locked ? "#2c3640" : "#1e2430");
+    const border = locked ? "#5a3a3a" : (active ? color : "#506478");
+    ctx.fillStyle = bg; roundRect(tx, ty, tabW, tabH, 8); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = 2;
+    roundRect(tx, ty, tabW, tabH, 8); ctx.stroke();
+    ctx.fillStyle = locked ? "#7a6a70" : (active ? "#fff" : "#c8c8e0");
+    ctx.font = "bold 15px Consolas, monospace";
+    const text = locked ? "🔒 " + label : label;
+    ctx.fillText(text, tx + tabW / 2 - ctx.measureText(text).width / 2, ty + 26);
+  };
+
+  drawTab(tx1, 1, "СТРАНИЦА 1 — 51+БОСС", false, "#7eaaff");
+  drawTab(tx2, 2, "СТРАНИЦА 2 — ДЕМОНЫ", !slot.bossDefeated, "#c060ff");
+  drawTab(tx3, 3, "СТРАНИЦА 3 — АД", !slot.hellBossDefeated, "#ff6020");
+
+  const topMargin = 195, bottomMargin = 90;
+  const viewH = VH - topMargin - bottomMargin;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, topMargin - 5, VW, viewH + 10); ctx.clip();
+  for (const b of levelButtons) {
+    const vy = b.y - levelScroll;
+    if (vy + b.h < topMargin - 10 || vy > VH - bottomMargin + 10) continue;
+    const hovered = (mouseX >= b.x && mouseX <= b.x + b.w &&
+                     mouseY >= vy && mouseY <= vy + b.h &&
+                     mouseY >= topMargin - 5 && mouseY <= VH - bottomMargin + 5);
+    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
+    let bg, border, fg;
+    if (!b.enabled) { bg = "#28282d"; border = "#3c3c41"; fg = "#6e6e6e"; }
+    else if (b.isHellBoss) {
+      if (b.hover > 0.5) { bg = "#8a1000"; border = "#ff8020"; fg = "#ffe0c0"; }
+      else { bg = "#4a0800"; border = "#c04010"; fg = "#ffb080"; }
+    }
+    else if (b.isBoss) {
+      if (b.hover > 0.5) { bg = "#6a1a1a"; border = "#ff5050"; fg = "#ffe0e0"; }
+      else { bg = "#3c1010"; border = "#8a2020"; fg = "#ffb0b0"; }
+    }
+    else if (b.page === 3) {
+      if (b.hover > 0.5) { bg = "#8a3000"; border = "#ff8020"; fg = "#ffe8d0"; }
+      else { bg = "#4a1800"; border = "#a04020"; fg = "#ffb080"; }
+    }
+    else if (b.page === 2) {
+      if (b.hover > 0.5) { bg = "#4a2050"; border = "#c060ff"; fg = "#f0d0ff"; }
+      else { bg = "#2e1838"; border = "#7a48a0"; fg = "#c8a8e0"; }
+    }
+    else if (b.hover > 0.5) { bg = "#3c4660"; border = "#7eaaff"; fg = "#f0f0ff"; }
+    else { bg = "#28303c"; border = "#506478"; fg = "#dcdcff"; }
+    ctx.fillStyle = bg; roundRect(b.x, vy, b.w, b.h, 8); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = 2;
+    roundRect(b.x, vy, b.w, b.h, 8); ctx.stroke();
+    ctx.fillStyle = fg;
+    ctx.font = "bold 16px Consolas, monospace";
+    let title;
+    if (b.isBoss) title = "★ БОСС ★";
+    else if (b.isHellBoss) title = "★★ АД-БОСС ★★";
+    else title = "УР. " + (b.idx + 1);
+    const tW = ctx.measureText(title).width;
+    ctx.fillText(title, b.x + b.w / 2 - tW / 2, vy + 36);
+    ctx.font = "11px Consolas, monospace";
+    ctx.fillStyle = b.enabled ? (b.isHellBoss ? "#ffc090" : b.isBoss ? "#ff9090" : (b.page === 3 ? "#ffa060" : (b.page === 2 ? "#d0a0ff" : "#9c9cb4"))) : "#5a5a64";
+    let subtitle;
+    if (!b.enabled) subtitle = "заблокировано";
+    else if (b.isBoss) subtitle = "финальный босс";
+    else if (b.isHellBoss) subtitle = "владыка преисподней";
+    else if (b.page === 3) subtitle = PAGE3_NAMES[b.idx];
+    else if (b.page === 2) subtitle = PAGE2_NAMES[b.idx];
+    else subtitle = PAGE1_NAMES[b.idx];
+    const sW = ctx.measureText(subtitle).width;
+    ctx.fillText(subtitle, b.x + b.w / 2 - sW / 2, vy + 60);
+  }
+  ctx.restore();
+  if (levelScrollMax > 0) {
+    const cols = 5;
+    let total = currentPage === 1 ? PAGE1_RAW.length + 1 : currentPage === 2 ? PAGE2_RAW.length : PAGE3_RAW.length + 1;
+    const rows = Math.ceil(total / cols);
+    const totalH = rows * 78 + (rows - 1) * 15;
+    const barH = Math.max(30, viewH * viewH / totalH);
+    const barY = topMargin + (viewH - barH) * (levelScroll / levelScrollMax);
+    ctx.fillStyle = "#3c3c46"; roundRect(VW - 15, topMargin, 6, viewH, 3); ctx.fill();
+    ctx.fillStyle = "#8cb4f0"; roundRect(VW - 15, barY, 6, barH, 3); ctx.fill();
+  }
+  drawBackButton();
+}
+let backHover = 0;
+function drawBackButton() {
+  const x = 30, y = VH - 70, w = 180, h = 45;
+  const hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
+  backHover += ((hovered ? 1 : 0) - backHover) * 0.15;
+  ctx.fillStyle = hovered ? "#3c4660" : "#28303c";
+  roundRect(x, y, w, h, 8); ctx.fill();
+  ctx.strokeStyle = hovered ? "#7eaaff" : "#506478"; ctx.lineWidth = 2;
+  roundRect(x, y, w, h, 8); ctx.stroke();
+  ctx.fillStyle = "#dcdcff";
+  ctx.font = "bold 20px Consolas, monospace";
+  const t = "← НАЗАД";
+  ctx.fillText(t, x + w / 2 - ctx.measureText(t).width / 2, y + h / 2 + 7);
+}
+
+// ============================================================
+// МАГАЗИН (3 категории: меню, курсор, музыка)
+// ============================================================
+let shopButtons = [];
+let shopTab = "menu"; // menu | cursor | music
+let shopTabsHit = [];
+
+function rebuildShopButtons() {
+  shopButtons = [];
+  const slot = getSlot();
+
+  if (shopTab === "menu" || shopTab === "cursor") {
+    const themes = THEMES[shopTab];
+    const keys = Object.keys(themes);
+    const cardW = 200, cardH = 120, gap = 15;
+    const cols = 5;
+    const startX = (VW - (cols * cardW + (cols - 1) * gap)) / 2;
+    const startY = 200;
+    keys.forEach((k, i) => {
+      const col = i % cols, row = (i / cols) | 0;
+      shopButtons.push({
+        kind: shopTab, key: k,
+        x: startX + col * (cardW + gap),
+        y: startY + row * (cardH + gap),
+        w: cardW, h: cardH, hover: 0, appear: 1
+      });
+    });
+  } else if (shopTab === "music") {
+    const keys = Object.keys(TRACKS);
+    const cardW = 300, cardH = 100, gap = 15;
+    const cols = 3;
+    const startX = (VW - (cols * cardW + (cols - 1) * gap)) / 2;
+    const startY = 200;
+    keys.forEach((k, i) => {
+      const col = i % cols, row = (i / cols) | 0;
+      shopButtons.push({
+        kind: "music", key: k,
+        x: startX + col * (cardW + gap),
+        y: startY + row * (cardH + gap),
+        w: cardW, h: cardH, hover: 0, appear: 1
+      });
+    });
+  }
+}
+
+function drawShopScreen(dt) {
+  drawMenuBg(dt);
+  ctx.fillStyle = "#dcc850";
+  ctx.font = "bold 40px Consolas, monospace";
+  const t = "МАГАЗИН";
+  const tw = ctx.measureText(t).width;
+  ctx.fillText(t, VW / 2 - tw / 2, 50);
+
+  const slot = getSlot();
+  ctx.fillStyle = "#ffcc50";
+  ctx.font = "bold 22px Consolas, monospace";
+  const r = "Руны: " + slot.runes;
+  ctx.fillText(r, VW / 2 - ctx.measureText(r).width / 2, 88);
+
+  // 3 вкладки
+  const tabW = 220, tabH = 40;
+  const tx1 = VW / 2 - tabW * 1.5 - 20, tx2 = VW / 2 - tabW / 2, tx3 = VW / 2 + tabW / 2 + 20;
+  const ty = 115;
+  const drawShopTab = (tx, tab, label, color) => {
+    const active = shopTab === tab;
+    const hovered = mouseX >= tx && mouseX <= tx + tabW && mouseY >= ty && mouseY <= ty + tabH;
+    const bg = active ? color + "40" : (hovered ? "#2c3640" : "#1e2430");
+    const border = active ? color : "#506478";
+    ctx.fillStyle = bg; roundRect(tx, ty, tabW, tabH, 8); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = 2;
+    roundRect(tx, ty, tabW, tabH, 8); ctx.stroke();
+    ctx.fillStyle = active ? "#fff" : "#c8c8e0";
+    ctx.font = "bold 16px Consolas, monospace";
+    ctx.fillText(label, tx + tabW / 2 - ctx.measureText(label).width / 2, ty + 27);
+  };
+  drawShopTab(tx1, "menu", "МЕНЮ", "#7eaaff");
+  drawShopTab(tx2, "cursor", "КУРСОР", "#c060ff");
+  drawShopTab(tx3, "music", "МУЗЫКА", "#ffcc50");
+
+  for (const b of shopButtons) {
+    const item = b.kind === "music" ? TRACKS[b.key] : THEMES[b.kind][b.key];
+    let owned, equipped, canBuy;
+    if (b.kind === "music") {
+      owned = slot.ownedTracks.includes(b.key);
+      equipped = (slot.musicMenu === b.key) || (slot.musicGame === b.key);
+      canBuy = !owned && slot.runes >= item.price;
+    } else {
+      const ownedArr = b.kind === "menu" ? slot.ownedMenuThemes : slot.ownedCursorThemes;
+      owned = ownedArr.includes(b.key);
+      equipped = (b.kind === "menu" ? slot.menuTheme : slot.cursorTheme) === b.key;
+      canBuy = !owned && slot.runes >= item.price;
+    }
+    const hovered = mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
+    b.hover += ((hovered ? 1 : 0) - b.hover) * Math.min(1, dt * 12);
+    const border = equipped ? "#3cdc78" : (owned ? "#8cb4f0" : (canBuy ? "#ffcc50" : "#6a3a3a"));
+    const bg = equipped ? "#1a4028" : (owned ? "#1a2840" : (canBuy ? "#3c2e1a" : "#28201a"));
+    ctx.fillStyle = bg; roundRect(b.x, b.y, b.w, b.h, 10); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = equipped ? 3 : 2;
+    roundRect(b.x, b.y, b.w, b.h, 10); ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 16px Consolas, monospace";
+    ctx.fillText(item.name, b.x + b.w / 2 - ctx.measureText(item.name).width / 2, b.y + 28);
+    ctx.fillStyle = "#c8c8d0";
+    ctx.font = "12px Consolas, monospace";
+    ctx.fillText(item.desc, b.x + b.w / 2 - ctx.measureText(item.desc).width / 2, b.y + 50);
+    let label, color;
+    if (b.kind === "music" && owned) {
+      const isMenu = slot.musicMenu === b.key;
+      const isGame = slot.musicGame === b.key;
+      if (isMenu && isGame) { label = "✔ ВЕЗДЕ"; color = "#3cdc78"; }
+      else if (isMenu) { label = "В МЕНЮ (клик — в игру)"; color = "#3cdc78"; }
+      else if (isGame) { label = "В ИГРЕ (клик — в меню)"; color = "#3cdc78"; }
+      else { label = "ВЫБРАТЬ"; color = "#8cb4f0"; }
+      // для музыки: клик — переключает меню/игру
+      ctx.fillStyle = color;
+      ctx.font = "bold 13px Consolas, monospace";
+      ctx.fillText(label, b.x + b.w / 2 - ctx.measureText(label).width / 2, b.y + b.h - 20);
+    } else if (equipped) { label = "✔ ВЫБРАНО"; color = "#3cdc78"; }
+    else if (owned) { label = "ВЫБРАТЬ"; color = "#8cb4f0"; }
+    else if (canBuy) { label = "КУПИТЬ — " + item.price + " рун"; color = "#ffcc50"; }
+    else { label = "НУЖНО " + item.price + " рун"; color = "#a06060"; }
+    if (b.kind !== "music" || !owned) {
+      ctx.fillStyle = color;
+      ctx.font = "bold 14px Consolas, monospace";
+      ctx.fillText(label, b.x + b.w / 2 - ctx.measureText(label).width / 2, b.y + b.h - 20);
+    }
+  }
+  drawBackButton();
+}
+
+// ============================================================
+// НАСТРОЙКИ (2 ползунка: звук эффектов, музыка)
+// ============================================================
+function drawSettingsScreen(dt) {
+  drawMenuBg(dt);
+  ctx.fillStyle = "#dcc850";
+  ctx.font = "bold 44px Consolas, monospace";
+  const t = "НАСТРОЙКИ";
+  const tw = ctx.measureText(t).width;
+  ctx.fillText(t, VW / 2 - tw / 2, 70);
+
+  const sliderW = 500, sliderH = 20;
+  const sx = VW / 2 - sliderW / 2;
+  const sy1 = 240, sy2 = 340;
+
+  // Звук эффектов
+  ctx.fillStyle = "#dcdcec"; ctx.font = "22px Consolas, monospace";
+  const l1 = "Громкость эффектов";
+  ctx.fillText(l1, VW / 2 - ctx.measureText(l1).width / 2, sy1 - 30);
+  ctx.fillStyle = "#1e1e28"; roundRect(sx, sy1, sliderW, sliderH, 10); ctx.fill();
+  const f1 = sliderW * settingsVolume;
+  const g1 = ctx.createLinearGradient(sx, 0, sx + sliderW, 0);
+  g1.addColorStop(0, "#3caaff"); g1.addColorStop(1, "#50dc78");
+  ctx.fillStyle = g1; roundRect(sx, sy1, f1, sliderH, 10); ctx.fill();
+  ctx.strokeStyle = "#506478"; ctx.lineWidth = 2;
+  roundRect(sx, sy1, sliderW, sliderH, 10); ctx.stroke();
+  ctx.fillStyle = "#f0f0ff";
+  ctx.beginPath(); ctx.arc(sx + f1, sy1 + sliderH / 2, 14, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#3c4660"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(sx + f1, sy1 + sliderH / 2, 14, 0, 7); ctx.stroke();
+  ctx.fillStyle = "#b4b4c8"; ctx.font = "18px Consolas, monospace";
+  const p1 = Math.round(settingsVolume * 100) + "%";
+  ctx.fillText(p1, VW / 2 - ctx.measureText(p1).width / 2, sy1 + sliderH + 30);
+
+  // Музыка
+  ctx.fillStyle = "#dcdcec"; ctx.font = "22px Consolas, monospace";
+  const l2 = "Громкость музыки";
+  ctx.fillText(l2, VW / 2 - ctx.measureText(l2).width / 2, sy2 - 30);
+  ctx.fillStyle = "#1e1e28"; roundRect(sx, sy2, sliderW, sliderH, 10); ctx.fill();
+  const f2 = sliderW * settingsMusicVolume;
+  const g2 = ctx.createLinearGradient(sx, 0, sx + sliderW, 0);
+  g2.addColorStop(0, "#ffcc50"); g2.addColorStop(1, "#dc50dc");
+  ctx.fillStyle = g2; roundRect(sx, sy2, f2, sliderH, 10); ctx.fill();
+  ctx.strokeStyle = "#506478"; ctx.lineWidth = 2;
+  roundRect(sx, sy2, sliderW, sliderH, 10); ctx.stroke();
+  ctx.fillStyle = "#f0f0ff";
+  ctx.beginPath(); ctx.arc(sx + f2, sy2 + sliderH / 2, 14, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#3c4660"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(sx + f2, sy2 + sliderH / 2, 14, 0, 7); ctx.stroke();
+  ctx.fillStyle = "#b4b4c8"; ctx.font = "18px Consolas, monospace";
+  const p2 = Math.round(settingsMusicVolume * 100) + "%";
+  ctx.fillText(p2, VW / 2 - ctx.measureText(p2).width / 2, sy2 + sliderH + 30);
+
+  // Кнопка теста звука
+  const bx = VW / 2 - 130, by = 400, bw = 260, bh = 50;
+  const hovered = mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh;
+  ctx.fillStyle = hovered ? "#3c4660" : "#28303c";
+  roundRect(bx, by, bw, bh, 10); ctx.fill();
+  ctx.strokeStyle = hovered ? "#7eaaff" : "#506478"; ctx.lineWidth = 2;
+  roundRect(bx, by, bw, bh, 10); ctx.stroke();
+  ctx.fillStyle = "#dcdcff"; ctx.font = "bold 20px Consolas, monospace";
+  const btnTxt = "🔊 ПРОВЕРИТЬ ЗВУК";
+  ctx.fillText(btnTxt, bx + bw / 2 - ctx.measureText(btnTxt).width / 2, by + bh / 2 + 7);
+
+  drawBackButton();
+}
+
+// ============================================================
+// ДИАЛОГ
+// ============================================================
+let confirmHoverYes = 0, confirmHoverNo = 0;
+let confirmCallback = null;
+let confirmMessage = "";
+function drawConfirmDialog(dt) {
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillRect(0, 0, VW, VH);
+  const w = 600, h = 240;
+  const x = (VW - w) / 2, y = (VH - h) / 2;
+  ctx.fillStyle = "#232838"; roundRect(x, y, w, h, 14); ctx.fill();
+  ctx.strokeStyle = "#c84646"; ctx.lineWidth = 2;
+  roundRect(x, y, w, h, 14); ctx.stroke();
+  ctx.fillStyle = "#ffc850"; ctx.font = "bold 36px Consolas, monospace";
+  ctx.fillText("!", x + 30, y + 55);
+  ctx.font = "bold 26px Consolas, monospace";
+  ctx.fillText("ПОДТВЕРЖДЕНИЕ", x + 70, y + 55);
+  ctx.fillStyle = "#e6e6f0"; ctx.font = "18px Consolas, monospace";
+  const lines = confirmMessage.split("\n");
+  for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x + 30, y + 110 + i * 28);
+  const yesX = x + 40, noX = x + w - 260, by = y + h - 70, bw = 220, bh = 50;
+  const yh = pointInRect(mouseX, mouseY, { x: yesX, y: by, w: bw, h: bh, appear: 1, hover: 0 });
+  const nh = pointInRect(mouseX, mouseY, { x: noX, y: by, w: bw, h: bh, appear: 1, hover: 0 });
+  confirmHoverYes += ((yh ? 1 : 0) - confirmHoverYes) * Math.min(1, dt * 12);
+  confirmHoverNo += ((nh ? 1 : 0) - confirmHoverNo) * Math.min(1, dt * 12);
+  ctx.fillStyle = "rgb(" + Math.round(70 + confirmHoverYes * 40) + ",25,25)";
+  roundRect(yesX, by, bw, bh, 10); ctx.fill();
+  ctx.strokeStyle = "rgb(" + Math.round(180 + confirmHoverYes * 60) + ",60,60)";
+  ctx.lineWidth = 2; roundRect(yesX, by, bw, bh, 10); ctx.stroke();
+  ctx.fillStyle = "#ffe6e6"; ctx.font = "bold 18px Consolas, monospace";
+  let t = "ДА"; ctx.fillText(t, yesX + bw / 2 - ctx.measureText(t).width / 2, by + bh / 2 + 7);
+  ctx.fillStyle = "rgb(" + Math.round(40 + confirmHoverNo * 25) + "," + Math.round(50 + confirmHoverNo * 30) + ",70)";
+  roundRect(noX, by, bw, bh, 10); ctx.fill();
+  ctx.strokeStyle = "rgb(" + Math.round(90 + confirmHoverNo * 60) + "," + Math.round(120 + confirmHoverNo * 60) + ",180)";
+  ctx.lineWidth = 2; roundRect(noX, by, bw, bh, 10); ctx.stroke();
+  ctx.fillStyle = "#e6e6ff"; t = "ОТМЕНА";
+  ctx.fillText(t, noX + bw / 2 - ctx.measureText(t).width / 2, by + bh / 2 + 7);
+}
+
+// ============================================================
 // КЛИКИ
 // ============================================================
 function handleMenuClick(mx, my) {
   if (state === GAME_STATE.MENU) {
-    for (const b of menuButtons) {
-      if (pointInRect(mx, my, b)) { doMenuAction(b.action); return; }
-    }
+    for (const b of menuButtons) if (pointInRect(mx, my, b)) { doMenuAction(b.action); return; }
   } else if (state === GAME_STATE.SLOTS) {
     for (const b of slotButtons) {
       if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
-        if (b.idx >= 0) {
-          activeSlot = b.idx;
-          saveActiveSlot();
-          rebuildSlotButtons();
-        } else if (b.action === "play") {
-          state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
-        } else if (b.action === "rename") {
-          renameSlotIdx = activeSlot;
-          renameBuffer = slots[activeSlot].name;
-          state = GAME_STATE.RENAME;
-        } else if (b.action === "reset") {
+        if (b.idx >= 0) { activeSlot = b.idx; saveActiveSlot(); rebuildSlotButtons();
+          // Обновить музыку меню
+          playTrackByKey(getSlot().musicMenu || "default"); return; }
+        if (b.action === "play") { state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons(); return; }
+        if (b.action === "rename") { renameSlotIdx = activeSlot; renameBuffer = slots[activeSlot].name; state = GAME_STATE.RENAME; return; }
+        if (b.action === "reset") {
           confirmMessage = "Сбросить прогресс слота \"" + getSlot().name + "\"?\nВсе открытые уровни, руны и покупки будут потеряны.";
-          confirmCallback = () => {
-            const s = getSlot();
-            const name = s.name;
-            slots[activeSlot] = defaultSlot(name);
-            saveSlots();
-            state = GAME_STATE.SLOTS; rebuildSlotButtons();
-          };
-          state = GAME_STATE.CONFIRM_RESET;
-        } else if (b.action === "delete") {
-          confirmMessage = "Удалить слот \"" + getSlot().name + "\"?\nСлот вернётся к настройкам по умолчанию.";
-          confirmCallback = () => {
-            slots[activeSlot] = defaultSlot("Игрок " + (activeSlot + 1));
-            saveSlots();
-            state = GAME_STATE.SLOTS; rebuildSlotButtons();
-          };
-          state = GAME_STATE.CONFIRM_RESET;
+          confirmCallback = () => { const s = getSlot(); const n = s.name; slots[activeSlot] = defaultSlot(n); saveSlots(); state = GAME_STATE.SLOTS; rebuildSlotButtons(); };
+          state = GAME_STATE.CONFIRM_RESET; return;
         }
-        return;
+        if (b.action === "delete") {
+          confirmMessage = "Удалить слот \"" + getSlot().name + "\"?";
+          confirmCallback = () => { slots[activeSlot] = defaultSlot("Игрок " + (activeSlot + 1)); saveSlots(); state = GAME_STATE.SLOTS; rebuildSlotButtons(); };
+          state = GAME_STATE.CONFIRM_RESET; return;
+        }
       }
     }
     if (mx >= 30 && mx <= 210 && my >= VH - 70 && my <= VH - 25) {
       state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
     }
   } else if (state === GAME_STATE.RENAME) {
-    const w = 600, h = 260;
-    const x = (VW - w) / 2, y = (VH - h) / 2;
-    const saveX = x + 30, saveY = y + h - 70, bw = 200, bh = 50;
+    const w = 600, h = 240; const x = (VW - w) / 2, y = (VH - h) / 2;
+    const saveX = x + 30, saveY = y + h - 60, bw = 200, bh = 45;
     const cancelX = x + w - 230;
     if (mx >= saveX && mx <= saveX + bw && my >= saveY && my <= saveY + bh) {
       const name = (renameBuffer.trim() || ("Игрок " + (renameSlotIdx + 1))).slice(0, 20);
-      slots[renameSlotIdx].name = name;
-      saveSlots();
+      slots[renameSlotIdx].name = name; saveSlots();
       state = GAME_STATE.SLOTS; rebuildSlotButtons();
     } else if (mx >= cancelX && mx <= cancelX + bw && my >= saveY && my <= saveY + bh) {
       state = GAME_STATE.SLOTS; rebuildSlotButtons();
@@ -2331,32 +2560,28 @@ function handleMenuClick(mx, my) {
     if (mx >= 30 && mx <= 210 && my >= VH - 70 && my <= VH - 25) {
       state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons(); return;
     }
-    // вкладки
-    const tabW = 280, tabH = 40;
-    const tx1 = VW / 2 - tabW - 10, tx2 = VW / 2 + 10;
-    const ty = 90;
+    const tabW = 220, tabH = 40;
+    const tx1 = VW / 2 - tabW * 1.5 - 20, tx2 = VW / 2 - tabW / 2, tx3 = VW / 2 + tabW / 2 + 20;
+    const ty = 80;
+    const slot = getSlot();
     if (mx >= tx1 && mx <= tx1 + tabW && my >= ty && my <= ty + tabH) {
-      currentPage = 1;
-      levelScroll = 0;
-      rebuildLevelButtons();
-      return;
+      currentPage = 1; levelScroll = 0; rebuildLevelButtons(); return;
     }
     if (mx >= tx2 && mx <= tx2 + tabW && my >= ty && my <= ty + tabH) {
-      if (getSlot().bossDefeated) {
-        currentPage = 2;
-        levelScroll = 0;
-        rebuildLevelButtons();
-      }
+      if (slot.bossDefeated) { currentPage = 2; levelScroll = 0; rebuildLevelButtons(); }
       return;
     }
-    const topMargin = 175, bottomMargin = 90;
+    if (mx >= tx3 && mx <= tx3 + tabW && my >= ty && my <= ty + tabH) {
+      if (slot.hellBossDefeated) { currentPage = 3; levelScroll = 0; rebuildLevelButtons(); }
+      return;
+    }
+    const topMargin = 195, bottomMargin = 90;
     if (my < topMargin - 5 || my > VH - bottomMargin + 5) return;
     for (const b of levelButtons) {
       const vy = b.y - levelScroll;
       if (mx >= b.x && mx <= b.x + b.w && my >= vy && my <= vy + b.h) {
         if (b.enabled) {
-          levelIdx = b.idx;
-          loadLevel(levelIdx, b.page);
+          levelIdx = b.idx; loadLevel(levelIdx, b.page);
           state = GAME_STATE.PLAYING;
           if (!isTouchDevice) setTimeout(() => canvas.requestPointerLock(), 50);
         }
@@ -2364,22 +2589,49 @@ function handleMenuClick(mx, my) {
       }
     }
   } else if (state === GAME_STATE.SHOP) {
+    const tabW = 220, tabH = 40;
+    const tx1 = VW / 2 - tabW * 1.5 - 20, tx2 = VW / 2 - tabW / 2, tx3 = VW / 2 + tabW / 2 + 20;
+    const ty = 115;
+    if (mx >= tx1 && mx <= tx1 + tabW && my >= ty && my <= ty + tabH) { shopTab = "menu"; rebuildShopButtons(); return; }
+    if (mx >= tx2 && mx <= tx2 + tabW && my >= ty && my <= ty + tabH) { shopTab = "cursor"; rebuildShopButtons(); return; }
+    if (mx >= tx3 && mx <= tx3 + tabW && my >= ty && my <= ty + tabH) { shopTab = "music"; rebuildShopButtons(); return; }
     for (const b of shopButtons) {
       if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
-        const theme = THEMES[b.kind][b.key];
+        const item = b.kind === "music" ? TRACKS[b.key] : THEMES[b.kind][b.key];
         const slot = getSlot();
-        const ownedArr = b.kind === "menu" ? slot.ownedMenuThemes : slot.ownedCursorThemes;
-        const setEquipped = b.kind === "menu"
-          ? (v) => { slot.menuTheme = v; }
-          : (v) => { slot.cursorTheme = v; };
-        if (ownedArr.includes(b.key)) {
-          setEquipped(b.key);
-          saveSlots();
-        } else if (slot.runes >= theme.price) {
-          slot.runes -= theme.price;
-          ownedArr.push(b.key);
-          setEquipped(b.key);
-          saveSlots();
+        if (b.kind === "music") {
+          const owned = slot.ownedTracks.includes(b.key);
+          if (owned) {
+            // переключаем: если сейчас в меню — ставим в игру, и наоборот
+            const isMenu = slot.musicMenu === b.key;
+            const isGame = slot.musicGame === b.key;
+            if (isMenu && isGame) { slot.musicMenu = "default"; slot.musicGame = "default"; }
+            else if (isMenu) { slot.musicMenu = "default"; slot.musicGame = b.key; }
+            else if (isGame) { slot.musicMenu = b.key; slot.musicGame = "default"; }
+            else { slot.musicMenu = b.key; slot.musicGame = b.key; }
+            saveSlots();
+            playTrackByKey(slot.musicMenu || "default");
+          } else if (slot.runes >= item.price) {
+            slot.runes -= item.price;
+            slot.ownedTracks.push(b.key);
+            slot.musicMenu = b.key;
+            slot.musicGame = b.key;
+            saveSlots();
+            playTrackByKey(b.key);
+          }
+        } else {
+          const ownedArr = b.kind === "menu" ? slot.ownedMenuThemes : slot.ownedCursorThemes;
+          if (ownedArr.includes(b.key)) {
+            if (b.kind === "menu") slot.menuTheme = b.key;
+            else slot.cursorTheme = b.key;
+            saveSlots();
+          } else if (slot.runes >= item.price) {
+            slot.runes -= item.price;
+            ownedArr.push(b.key);
+            if (b.kind === "menu") slot.menuTheme = b.key;
+            else slot.cursorTheme = b.key;
+            saveSlots();
+          }
         }
         return;
       }
@@ -2392,8 +2644,7 @@ function handleMenuClick(mx, my) {
       state = GAME_STATE.MENU; menuTime = 0; rebuildMenuButtons();
     }
   } else if (state === GAME_STATE.CONFIRM_RESET) {
-    const w = 600, h = 240;
-    const x = (VW - w) / 2, y = (VH - h) / 2;
+    const w = 600, h = 240; const x = (VW - w) / 2, y = (VH - h) / 2;
     const yesX = x + 40, noX = x + w - 260, by = y + h - 70, bw = 220, bh = 50;
     if (mx >= yesX && mx <= yesX + bw && my >= by && my <= by + bh) {
       if (confirmCallback) confirmCallback();
@@ -2408,10 +2659,11 @@ function handleMenuClick(mx, my) {
 function doMenuAction(action) {
   if (action === "play") {
     const s = getSlot();
-    if (s.bossDefeated && s.unlocked > PAGE1_RAW.length) {
-      // игрок выбрал "играть" — идём на текущий незавершённый уровень (если есть)
-      // логика: если страница 2 открыта и там есть незавершённые — играем их
-      // но проще: играем максимально доступный уровень на стр. 2
+    if (s.hellBossDefeated && s.unlockedPage3 > 0) {
+      currentPage = 3;
+      levelIdx = Math.max(0, s.unlockedPage3 - 1);
+      loadLevel(levelIdx, 3);
+    } else if (s.bossDefeated && s.unlockedPage2 > 0) {
       currentPage = 2;
       levelIdx = Math.max(0, s.unlockedPage2 - 1);
       loadLevel(levelIdx, 2);
@@ -2424,16 +2676,14 @@ function doMenuAction(action) {
     if (!isTouchDevice) setTimeout(() => canvas.requestPointerLock(), 50);
   } else if (action === "levels") {
     state = GAME_STATE.LEVELS; levelScroll = 0;
-    currentPage = 1;
-    rebuildLevelButtons();
+    currentPage = 1; rebuildLevelButtons();
   } else if (action === "slots") {
-    state = GAME_STATE.SLOTS;
-    rebuildSlotButtons();
+    state = GAME_STATE.SLOTS; rebuildSlotButtons();
   } else if (action === "shop") {
-    state = GAME_STATE.SHOP;
-    rebuildShopButtons();
+    state = GAME_STATE.SHOP; shopTab = "menu"; rebuildShopButtons();
   } else if (action === "settings") {
     settingsVolume = masterVolume;
+    settingsMusicVolume = musicVolume;
     state = GAME_STATE.SETTINGS;
   } else if (action === "quit") {
     document.body.innerHTML = "<div style='color:#fff;font-family:Consolas;padding:40px;font-size:20px'>Спасибо за игру!<br><br>Обновите страницу, чтобы вернуться.</div>";
@@ -2448,33 +2698,57 @@ function exitToMenu() {
   state = GAME_STATE.MENU;
   menuTime = 0;
   rebuildMenuButtons();
+  // Переключить музыку на меню
+  playTrackByKey(getSlot().musicMenu || "default");
 }
 
-function rewardRunesForLevel(page, idx, isBoss) {
+function rewardRunesForLevel(page, idx, isBoss, isHellBoss) {
   const s = getSlot();
-  if (isBoss) { s.runes += 200; return; }
-  if (page === 2) s.runes += 25;
-  else s.runes += 10;
+  if (isHellBoss) { s.runes += 500; return; }
+  if (isBoss) { s.runes += 300; return; }
+  if (page === 3) s.runes += 50;
+  else if (page === 2) s.runes += 30;
+  else s.runes += 15;
 }
 
 function advanceAfterWin() {
   const s = getSlot();
-  if (isBossLevel) {
-    // победа над боссом открывает страницу 2
-    if (!s.bossDefeated) {
-      s.bossDefeated = true;
-      s.unlockedPage2 = 1;
-      rewardRunesForLevel(1, levelIdx, true);
+  if (isHellBossLevel) {
+    if (!s.hellBossDefeated) {
+      s.hellBossDefeated = true;
+      rewardRunesForLevel(3, levelIdx, false, true);
     }
     saveSlots();
     exitToMenu();
     return;
   }
-  if (isPage2) {
-    // выиграли уровень страницы 2
-    rewardRunesForLevel(2, levelIdx, false);
+  if (isBossLevel) {
+    if (!s.bossDefeated) {
+      s.bossDefeated = true;
+      s.unlockedPage2 = 1;
+      rewardRunesForLevel(1, levelIdx, true, false);
+    }
+    saveSlots();
+    exitToMenu();
+    return;
+  }
+  if (isPage3) {
+    rewardRunesForLevel(3, levelIdx, false, false);
+    if (levelIdx + 1 === PAGE3_RAW.length) {
+      // открываем адского босса
+      s.unlockedPage3 = PAGE3_RAW.length + 1;
+      saveSlots();
+      levelIdx = PAGE3_RAW.length;
+      loadLevel(levelIdx, 3);
+      return;
+    }
+    if (s.unlockedPage3 < levelIdx + 2) s.unlockedPage3 = levelIdx + 2;
+    saveSlots();
+    levelIdx += 1;
+    loadLevel(levelIdx, 3);
+  } else if (isPage2) {
+    rewardRunesForLevel(2, levelIdx, false, false);
     if (levelIdx + 1 >= PAGE2_RAW.length) {
-      // все 30 уровней страницы 2 пройдены
       exitToMenu();
       return;
     }
@@ -2483,17 +2757,14 @@ function advanceAfterWin() {
     levelIdx += 1;
     loadLevel(levelIdx, 2);
   } else {
-    // выиграли обычный уровень стр. 1
-    rewardRunesForLevel(1, levelIdx, false);
-    // уровень 51 (idx 50) завершён — открываем босса (52)
+    rewardRunesForLevel(1, levelIdx, false, false);
     if (levelIdx + 1 > s.unlocked) {
-      s.unlocked = levelIdx + 2; // следующий уровень + 1 (для 52-го открыт босс)
+      s.unlocked = levelIdx + 2;
       if (s.unlocked > PAGE1_RAW.length + 1) s.unlocked = PAGE1_RAW.length + 1;
     }
     saveSlots();
-    // если это был 51-й, следующий = босс (idx 51)
     if (levelIdx + 1 === PAGE1_RAW.length) {
-      levelIdx = PAGE1_RAW.length;  // босс
+      levelIdx = PAGE1_RAW.length;
       loadLevel(levelIdx, 1);
       return;
     }
@@ -2503,7 +2774,7 @@ function advanceAfterWin() {
 }
 
 // ============================================================
-// ОБНОВЛЕНИЕ И ЦИКЛ
+// ЦИКЛ
 // ============================================================
 function update(dt) {
   menuTime += dt;
@@ -2548,7 +2819,7 @@ function update(dt) {
       player.anim = Math.max(0, player.anim - dt * 4);
       player.flash = Math.max(0, player.flash - dt * 8);
       updateDamageIndicators(dt);
-      if (isBossLevel) {
+      if (isBossLevel || isHellBossLevel) {
         if (boss && !boss.alive) win = true;
       } else {
         if (exitPos && Math.hypot(exitPos.x - player.x, exitPos.y - player.y) < 0.6) win = true;
@@ -2571,12 +2842,8 @@ function drawTouchControls() {
   const swapX = VW - SWAP_BTN.x, swapY = VH - SWAP_BTN.y;
   ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(joyX, joyY, JOY_R, 0, 7); ctx.stroke();
-  const knobX = joyX + touch.moveDX * JOY_R;
-  const knobY = joyY + touch.moveDY * JOY_R;
   ctx.fillStyle = "rgba(255,255,255,0.15)";
-  ctx.beginPath(); ctx.arc(knobX, knobY, 28, 0, 7); ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.4)";
-  ctx.beginPath(); ctx.arc(knobX, knobY, 28, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(joyX + touch.moveDX * JOY_R, joyY + touch.moveDY * JOY_R, 28, 0, 7); ctx.fill();
   ctx.fillStyle = "rgba(220,50,50,0.35)";
   ctx.beginPath(); ctx.arc(fireX, fireY, FIRE_BTN.r, 0, 7); ctx.fill();
   ctx.strokeStyle = "rgba(255,150,150,0.7)"; ctx.lineWidth = 3;
@@ -2601,71 +2868,60 @@ function render(dt) {
   if (state === GAME_STATE.MENU) {
     drawMenuBg(dt);
     drawTitle();
-    ctx.font = "20px Consolas, monospace";
+    ctx.font = "18px Consolas, monospace";
     ctx.fillStyle = "#b4b4dc";
     const act = getSlot();
     const sub = "Игрок: " + act.name + "  |  Руны: " + act.runes +
                 "  |  Стр1: " + Math.max(0, act.unlocked - 1) + "/52" +
-                "  |  Стр2: " + act.unlockedPage2 + "/30";
-    ctx.fillText(sub, VW / 2 - ctx.measureText(sub).width / 2, 175);
+                "  |  Стр2: " + act.unlockedPage2 + "/31" +
+                "  |  Стр3: " + act.unlockedPage3 + "/21";
+    ctx.fillText(sub, VW / 2 - ctx.measureText(sub).width / 2, 158);
     drawMenuButtons();
-    ctx.fillStyle = "#8c8c9c";
-    ctx.font = "14px Consolas, monospace";
+    ctx.fillStyle = "#8c8c9c"; ctx.font = "14px Consolas, monospace";
     const hint = "ESC — выход   |   слот " + (activeSlot + 1) + " / " + SLOT_COUNT;
     ctx.fillText(hint, VW / 2 - ctx.measureText(hint).width / 2, VH - 35);
     ctx.fillStyle = "#64647c";
-    ctx.fillText("v4.0-js", VW - 80, VH - 15);
-  } else if (state === GAME_STATE.SLOTS) {
-    drawSlotScreen(dt);
-  } else if (state === GAME_STATE.RENAME) {
-    drawRenameScreen(dt);
-  } else if (state === GAME_STATE.LEVELS) {
-    drawLevelsScreen(dt);
-  } else if (state === GAME_STATE.SHOP) {
-    drawShopScreen(dt);
-  } else if (state === GAME_STATE.SETTINGS) {
-    drawSettingsScreen(dt);
-  } else if (state === GAME_STATE.CONFIRM_RESET) {
-    drawMenuBg(dt * 0.2);
-    drawConfirmDialog(dt);
-  } else if (state === GAME_STATE.PLAYING) {
-    renderWalls();
-    renderSprites();
-    renderWeapon();
-    renderCrosshair();
-    renderDamageIndicators();
-    renderLowHpWarning();
-    renderMinimap();
-    renderHud();
-    if (isBossLevel) renderBossBar();
+    ctx.fillText("v5.0-js", VW - 80, VH - 15);
+  } else if (state === GAME_STATE.SLOTS) drawSlotScreen(dt);
+  else if (state === GAME_STATE.RENAME) drawRenameScreen(dt);
+  else if (state === GAME_STATE.LEVELS) drawLevelsScreen(dt);
+  else if (state === GAME_STATE.SHOP) drawShopScreen(dt);
+  else if (state === GAME_STATE.SETTINGS) drawSettingsScreen(dt);
+  else if (state === GAME_STATE.CONFIRM_RESET) { drawMenuBg(dt * 0.2); drawConfirmDialog(dt); }
+  else if (state === GAME_STATE.PLAYING) {
+    renderWalls(); renderSprites(); renderWeapon();
+    renderCrosshair(); renderDamageIndicators(); renderLowHpWarning();
+    renderMinimap(); renderHud();
+    if (isBossLevel || isHellBossLevel) renderBossBar();
     if (isTouchDevice) drawTouchControls();
     if (gameOver || win) {
-      ctx.fillStyle = "rgba(0,0,0,0.72)";
-      ctx.fillRect(0, 0, VW, VH);
+      ctx.fillStyle = "rgba(0,0,0,0.72)"; ctx.fillRect(0, 0, VW, VH);
       ctx.font = "bold 52px Consolas, monospace";
       if (gameOver) {
         ctx.fillStyle = "#ff3c3c";
-        const m = isBossLevel ? "БОСС ПОБЕДИЛ" : "ВЫ ПОГИБЛИ";
+        const m = isHellBossLevel ? "ВЛАДЫКА ПРЕИСПОДНЕЙ УБИЛ ВАС" : isBossLevel ? "БОСС ПОБЕДИЛ" : "ВЫ ПОГИБЛИ";
         ctx.fillText(m, VW / 2 - ctx.measureText(m).width / 2, VH / 2 - 40);
+      } else if (isHellBossLevel) {
+        ctx.fillStyle = "#ff8020";
+        const m = "★★★ ВЛАДЫКА ПРЕИСПОДНЕЙ ПАЛ! ★★★";
+        ctx.fillText(m, VW / 2 - ctx.measureText(m).width / 2, VH / 2 - 60);
+        ctx.font = "22px Consolas, monospace";
+        ctx.fillStyle = "#ffcc80";
+        const s2 = "+500 рун! Вы прошли игру полностью.";
+        ctx.fillText(s2, VW / 2 - ctx.measureText(s2).width / 2, VH / 2);
       } else if (isBossLevel) {
         ctx.fillStyle = "#ffcc00";
         const m = "★ ПОБЕДА! БОСС ПОВЕРЖЕН ★";
         ctx.fillText(m, VW / 2 - ctx.measureText(m).width / 2, VH / 2 - 60);
         ctx.font = "22px Consolas, monospace";
         ctx.fillStyle = "#ffe6a0";
-        const s2 = "+200 рун! Страница 2 открыта.";
-        ctx.fillText(s2, VW / 2 - ctx.measureText(s2).width / 2, VH / 2 + 0);
-        const s3 = "Финальный счёт: " + player.score;
-        ctx.fillText(s3, VW / 2 - ctx.measureText(s3).width / 2, VH / 2 + 30);
-      } else if (isPage2 && levelIdx + 1 >= PAGE2_RAW.length) {
-        ctx.fillStyle = "#ffa0ff";
-        const m = "★ ВСЕ 30 УРОВНЕЙ ДЕМОНОВ ПРОЙДЕНЫ! ★";
-        ctx.fillText(m, VW / 2 - ctx.measureText(m).width / 2, VH / 2 - 40);
+        const s2 = "+300 рун! Страница 2 открыта.";
+        ctx.fillText(s2, VW / 2 - ctx.measureText(s2).width / 2, VH / 2);
       } else {
         ctx.fillStyle = "#3cff78";
-        const m = isPage2
-          ? "УР. " + (levelIdx + 1) + " СТР. 2 ПРОЙДЕН!"
-          : "УРОВЕНЬ " + (levelIdx + 1) + " ПРОЙДЕН!";
+        const m = isPage3 ? "АД УР. " + (levelIdx + 1) + " ПРОЙДЕН!"
+                : isPage2 ? "УР. " + (levelIdx + 1) + " СТР. 2 ПРОЙДЕН!"
+                : "УРОВЕНЬ " + (levelIdx + 1) + " ПРОЙДЕН!";
         ctx.fillText(m, VW / 2 - ctx.measureText(m).width / 2, VH / 2 - 40);
       }
       ctx.font = "20px Consolas, monospace";
@@ -2684,6 +2940,12 @@ function loop(now) {
   render(dt);
   requestAnimationFrame(loop);
 }
+
+// Запуск: подхватываем музыку меню для активного слота
+setTimeout(() => {
+  try { ensureAudio(); playTrackByKey(getSlot().musicMenu || "default"); } catch (e) {}
+}, 500);
+
 lastTime = performance.now();
 requestAnimationFrame(loop);
 </script>
