@@ -21,7 +21,6 @@ const STORAGE_VOLUME="python_doom_volume_v1",STORAGE_MUSIC_VOLUME="python_doom_m
 const STORAGE_SLOTS="python_doom_slots_v1",STORAGE_ACTIVE_SLOT="python_doom_active_slot_v1";
 const SLOT_COUNT=5;let VW=960,VH=600;
 
-// ТРЕКИ с твоими Dropbox-ссылками
 const TRACKS={
   default:{name:"Тёмный эмбиент",price:0,desc:"Простая синтезированная подложка",file:"",synth:{type:"ambient",base:55,tempo:0.5,wave:"sine"}},
   ya_pogib:{name:"Я погиб на поле боя",price:60,desc:"Медленный марш павшим",file:"https://www.dropbox.com/scl/fi/gu6uqm17tjd2ckjzvisla/ya_pogib.mp3?rlkey=2g6jhpl1fqzp871cy1afz6w5u&st=81q0utz1&raw=1",synth:{type:"march",base:70,tempo:0.35,wave:"sawtooth"}},
@@ -31,7 +30,6 @@ const TRACKS={
   korza_telo:{name:"KORZA — Telo pokhudelo",price:170,desc:"Тёмный техно-бит",file:"https://www.dropbox.com/scl/fi/up6xapa2ehgslh3fum4va/korza_telo.mp3?rlkey=ohfhhy3jarcfugk8qgt9yzfth&st=9i8m6vkf&raw=1",synth:{type:"techno",base:100,tempo:1.4,wave:"square"}}
 };
 
-// КАРТЫ
 const PAGE1_RAW=[
 ["1111111111111111","1000000010000001","1011100010111001","1010000000010001","1010111110010001","1000100010000001","1110101010111101","1000101000100001","1011101111101101","1000001000001001","1011111011101001","1010000010000001","1010111010111101","1000100010000001","1011100010111002","1111111111111111"],
 ["11111111111111111111","10000000001000000001","10111111001011111001","10100001000010001001","10101101011010101001","10101000001000100001","10101111101011101101","10001000100010000001","11111010111010111101","10000010000010000001","10111110111110111001","10100000100000100001","10101110101110101101","10001000100000100001","10111011111011101101","10000010000000000001","10111110111111111001","10000000100000001001","10111110101111101002","11111111111111111111"],
@@ -88,6 +86,8 @@ const PAGE1_RAW=[
 ["11111111111111111111","10000000000000000001","10011101110111011001","10010001000100010001","10010101010101010101","10010100010001000101","10010111011101110101","10010000000000000001","10011101110111011101","10000000010001000001","10111011010101011101","10001000010001000001","10101111011101111101","10000000000000000001","10111101110111111102","10000000000000000001","11111111111111111111"],
 ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"]
 ];
+
+// Страница 2 - 30 уровней
 const PAGE2_RAW=[
 ["11111111111111111111","10000000000000000001","10000000000000000001","10000011111000000001","10000010001000000001","10000010001000000001","10000011111000000001","10000000000000000001","10000000000000000001","10011111111111111001","10000000000000000001","10000000000000000001","10000011111000000001","10000010001000000001","10000010001000000002","10000011111000000001","10000000000000000001","10000000000000000001","10000000000000000001","11111111111111111111"],
 ["1111111111111111111111","1000000000000000000001","1011111111111111111101","1010000000000000000101","1010111111111111110101","1010100000000000010101","1010101111111111010101","1010101000000001010101","1010101011111101010101","1010101010000101010101","1010101010000101010101","1010101011111101010101","1010101000000001010101","1010101111111111010101","1010100000000000010101","1010111111111111110101","1010000000000000000102","1011111111111111111101","1000000000000000000001","1111111111111111111111"],
@@ -122,6 +122,7 @@ const PAGE2_RAW=[
 ["11111111111111111111","10000000000000000001","10011101110111011001","10010001000100010001","10010101010101010101","10010100010001000101","10010111011101110101","10010000000000000001","10011101110111011101","10000000010001000001","10111011010101011101","10001000010001000001","10101111011101111101","10000000000000000001","10111101110111111102","10000000000000000001","11111111111111111111"],
 ["1111111111111111111111","1000000000000000000001","1010101010101010101001","1010001000100010001001","1011101110111011101101","1000100010001000100001","1110111011101110111011","1000000000000000000001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000100010001000100001","1011101110111011101101","1000000000000000000001","1011101110111011101102","1000000000000000000001","1111111111111111111111"]
 ];
+
 const PAGE3_RAW=[
 ["11111111111111111111","10000000000000000001","10111111111111111101","10100000000000000101","10101111111111110101","10101000000000010101","10101011111111010101","10101010000001010101","10101010111001010101","10101010101001010101","10101010111001010101","10101010000001010101","10101011111111010101","10101000000000010101","10101111111111110102","10100000000000000001","10111111111111111101","10000000000000000001","11111111111111111111"],
 ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000010000101","10101111011110110101","10100000000000000101","10111111101111110101","10000001001000000101","10111101001111110101","10100101001000000101","10110101001111111101","10100101001000000001","10110101001111111101","10000100000000000001","10111111011111111102","10000000000000000001","11111111111111111111"],
@@ -144,6 +145,7 @@ const PAGE3_RAW=[
 ["1111111111111111111111","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1000000000000000000001","1111001111111100111101","1000000000000000000001","1001001001001001001001","1001001001001001001001","1001001001001001001002","1000000000000000000001","1111111111111111111111"],
 ["11111111111111111111","10000000000000000001","10111101111011110101","10100001000010000101","10101111011110110101","10100000000000000101","10111111101111110101","10000001001000000101","10111101001111110101","10100101001000000101","10110101001111111101","10100101001000000001","10110101001111111101","10000100000000000001","10111111011111111102","10000000000000000001","11111111111111111111"]
 ];
+
 const BOSS_ARENA=["1111111111111111111111111111","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000011100000000111000001001","1000011100000000111000001001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1000000000000000000000000001","1111111111111111111111111111"];
 const HELL_BOSS_ARENA=["11111111111111111111111111111111","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000011110000001111000000000001","10000010010000001001000000000001","10000010010000001001000000000001","10000011110000001111000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","10000000000000000000000000000001","11111111111111111111111111111111"];
 
@@ -151,10 +153,7 @@ const PAGE1_NAMES=["Кирпичный лабиринт","Тёмный кори�
 const PAGE2_NAMES=["Врата ада","Кровавый зал","Кости павших","Пепел и пламя","Логово демонов","Серное озеро","Разлом","Тени преисподней","Клеймо","Обсидиановый зал","Пекло","Ритуал крови","Катакомбы","Проклятый храм","Мясорубка","Мёртвая тишина","Печать бездны","Кровавый водопад","Трон Хаоса","Погребальный костёр","Молот дьявола","Крик душ","Тёмная купель","Ледяной предел","Костяной трон","Скорбь","Пламя возмездия","Глаз бури","Бездна","Владыка демонов"];
 const PAGE3_NAMES=["Адские врата","Реки лавы","Пламя возмездия","Кровавый шторм","Костяные поля","Обсидиановый предел","Серный водопад","Огненный вихрь","Тьма бездны","Проклятые глубины","Молот дьявола","Костёр душ","Пекло II","Логово титанов","Пепельный трон","Крик тысячи душ","Разлом ада","Пламя преисподней","Тёмная цитадель","Владыка Преисподней"];
 
-const THEMES={
-  menu:{default:{name:"Тёмный космос",price:0,desc:"Звёздное небо"},hell:{name:"Ад",price:100,desc:"Красный градиент с лавой"},matrix:{name:"Матрица",price:150,desc:"Зелёные символы"},aurora:{name:"Северное сияние",price:200,desc:"Сине-зелёные волны"},blood:{name:"Кровь",price:250,desc:"Тёмно-красные капли"},ice:{name:"Ледяная бездна",price:300,desc:"Снег и лёд"},desert:{name:"Пустыня",price:300,desc:"Песок и дрожащий горизонт"},cyber:{name:"Киберпанк",price:350,desc:"Неоновые полосы"},volcano:{name:"Вулкан",price:400,desc:"Огненные всполохи"},curse:{name:"Проклятие",price:500,desc:"Туман и черепа"}},
-  cursor:{default:{name:"Красный крест",price:0,desc:"Классика"},green:{name:"Зелёный Doom",price:80,desc:"Зелёные линии"},gold:{name:"Золотой крест",price:120,desc:"Золото"},neon:{name:"Синий неон",price:150,desc:"Голубой пульс"},skull:{name:"Багровый череп",price:200,desc:"Мини-череп"},blood:{name:"Кровавый крест",price:250,desc:"С каплями"},ice:{name:"Ледяная звезда",price:250,desc:"Снежинка"},fire:{name:"Огненный шар",price:300,desc:"Пламя"},void:{name:"Пустотный глаз",price:400,desc:"Моргающий глаз"}}
-};
+const THEMES={menu:{default:{name:"Тёмный космос",price:0,desc:"Звёздное небо"},hell:{name:"Ад",price:100,desc:"Красный градиент с лавой"},matrix:{name:"Матрица",price:150,desc:"Зелёные символы"},aurora:{name:"Северное сияние",price:200,desc:"Сине-зелёные волны"},blood:{name:"Кровь",price:250,desc:"Тёмно-красные капли"},ice:{name:"Ледяная бездна",price:300,desc:"Снег и лёд"},desert:{name:"Пустыня",price:300,desc:"Песок и дрожащий горизонт"},cyber:{name:"Киберпанк",price:350,desc:"Неоновые полосы"},volcano:{name:"Вулкан",price:400,desc:"Огненные всполохи"},curse:{name:"Проклятие",price:500,desc:"Туман и черепа"}},cursor:{default:{name:"Красный крест",price:0,desc:"Классика"},green:{name:"Зелёный Doom",price:80,desc:"Зелёные линии"},gold:{name:"Золотой крест",price:120,desc:"Золото"},neon:{name:"Синий неон",price:150,desc:"Голубой пульс"},skull:{name:"Багровый череп",price:200,desc:"Мини-череп"},blood:{name:"Кровавый крест",price:250,desc:"С каплями"},ice:{name:"Ледяная звезда",price:250,desc:"Снежинка"},fire:{name:"Огненный шар",price:300,desc:"Пламя"},void:{name:"Пустотный глаз",price:400,desc:"Моргающий глаз"}}};
 
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d",{alpha:false});
@@ -163,7 +162,6 @@ window.addEventListener("resize",resizeCanvas);resizeCanvas();
 function clamp(v,mn,mx){return v<mn?mn:v>mx?mx:v;}
 function makeCanvas(w,h){const c=document.createElement("canvas");c.width=w;c.height=h;return c;}
 
-// ТЕКСТУРЫ (красивые кирпичи)
 function makeWallTexture(baseColor,seed){const size=64;const tex=new Uint8ClampedArray(size*size*3);let s=seed;const rnd=()=>{s=(s*9301+49297)%233280;return s/233280;};const [br,bg,bb]=baseColor;
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){const brickY=y%16;const offset=((y/16)|0)%2?16:0;const brickX=(x+offset)%32;let r,g,b;
     if(brickY<2||brickX<2){r=br*0.32;g=bg*0.32;b=bb*0.32;}
@@ -178,7 +176,6 @@ const TEX_BOSS_WALL=makeWallTexture([120,40,40],3);
 const TEX_DEMON_WALL=makeWallTexture([80,30,90],4);
 const TEX_HELL_WALL=makeWallTexture([160,50,20],5);
 
-// СПРАЙТЫ
 function makeEnemySprite(){const c=makeCanvas(48,64);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(24,60,18,4,0,0,7);g.fill();g.fillStyle="#3a1010";g.beginPath();g.moveTo(14,14);g.lineTo(6,2);g.lineTo(20,12);g.closePath();g.fill();g.beginPath();g.moveTo(34,14);g.lineTo(42,2);g.lineTo(28,12);g.closePath();g.fill();g.fillStyle="#5a2020";g.fillRect(12,8,24,26);g.fillStyle="#3a1010";g.fillRect(12,8,24,4);g.fillStyle="#ff3030";g.fillRect(16,16,6,5);g.fillRect(26,16,6,5);g.fillStyle="#000";g.fillRect(18,17,2,3);g.fillRect(28,17,2,3);g.fillStyle="#000";g.fillRect(16,26,16,4);g.fillStyle="#fff";for(let i=0;i<4;i++)g.fillRect(17+i*4,26,2,3);g.fillStyle="#7a2a2a";g.fillRect(8,34,32,20);g.fillStyle="#4a1010";g.fillRect(8,34,32,4);g.fillStyle="#fff";for(let i=0;i<3;i++){g.fillRect(4+i*3,52,2,4);g.fillRect(38+i*3,52,2,4);}g.fillStyle="#3a1010";g.fillRect(12,52,10,8);g.fillRect(26,52,10,8);return c;}
 function makeDemonSprite(){const c=makeCanvas(64,80);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(32,74,26,5,0,0,7);g.fill();g.fillStyle="#2a0a2a";g.beginPath();g.moveTo(14,14);g.lineTo(6,0);g.lineTo(20,12);g.closePath();g.fill();g.beginPath();g.moveTo(50,14);g.lineTo(58,0);g.lineTo(44,12);g.closePath();g.fill();g.fillStyle="#5a1a5a";g.fillRect(12,8,40,30);g.fillStyle="#3a0a3a";g.fillRect(12,8,40,5);g.fillStyle="#ff3030";g.fillRect(18,18,8,7);g.fillRect(38,18,8,7);g.fillStyle="#000";g.fillRect(21,20,3,4);g.fillRect(41,20,3,4);g.fillStyle="#000";g.fillRect(18,30,28,6);g.fillStyle="#fff";for(let i=0;i<6;i++)g.fillRect(19+i*5,30,3,4);g.fillStyle="#7a2a7a";g.fillRect(8,38,48,34);g.fillStyle="#4a0a4a";g.fillRect(8,38,48,6);g.fillStyle="#fff";for(let i=0;i<3;i++){g.fillRect(2+i*4,68,3,6);g.fillRect(56+i*4,68,3,6);}g.fillStyle="#3a0a3a";g.fillRect(14,72,12,8);g.fillRect(38,72,12,8);return c;}
 function makeHellDemonSprite(){const c=makeCanvas(72,88);const g=c.getContext("2d");g.fillStyle="rgba(0,0,0,0.5)";g.beginPath();g.ellipse(36,82,30,5,0,0,7);g.fill();g.fillStyle="#1a0000";g.beginPath();g.moveTo(14,14);g.lineTo(2,-2);g.lineTo(22,12);g.closePath();g.fill();g.beginPath();g.moveTo(58,14);g.lineTo(70,-2);g.lineTo(50,12);g.closePath();g.fill();g.fillStyle="#8a0808";g.fillRect(12,8,48,34);g.fillStyle="#5a0000";g.fillRect(12,8,48,6);g.fillStyle="#ffcc00";g.fillRect(18,18,10,9);g.fillRect(44,18,10,9);g.fillStyle="#000";g.fillRect(22,21,3,5);g.fillRect(48,21,3,5);g.fillStyle="#000";g.fillRect(16,32,40,8);g.fillStyle="#fff";for(let i=0;i<8;i++)g.fillRect(17+i*5,32,3,5);g.fillStyle="#b01010";g.fillRect(6,42,60,38);g.fillStyle="#700000";g.fillRect(6,42,60,8);g.strokeStyle="#e02020";g.lineWidth=2;for(let i=0;i<4;i++){g.beginPath();g.moveTo(14,52+i*12);g.quadraticCurveTo(36,58+i*12,58,52+i*12);g.stroke();}g.fillStyle="#fff";for(let i=0;i<4;i++){g.fillRect(0+i*4,76,3,6);g.fillRect(64+i*4,76,3,6);}g.fillStyle="#700000";g.fillRect(16,80,14,8);g.fillRect(42,80,14,8);return c;}
@@ -199,7 +196,6 @@ const SPR_AMMO=makeAmmoSprite();
 const SPR_PISTOL=makePistol();
 const SPR_SHOTGUN=makeShotgun();
 
-// ЗВУК — теперь с проверкой, что трек не менялся
 let audioCtx=null,masterVolume=0.7,musicVolume=0.5;
 let musicSource=null,currentTrackLoopTimer=null,currentTrackKey=null;
 (function(){try{const v=parseFloat(localStorage.getItem(STORAGE_VOLUME));if(!isNaN(v))masterVolume=clamp(v,0,1);const mv=parseFloat(localStorage.getItem(STORAGE_MUSIC_VOLUME));if(!isNaN(mv))musicVolume=clamp(mv,0,1);}catch(e){}})();
@@ -218,9 +214,8 @@ function startSynthTrack(key){const t=TRACKS[key];if(!t)return;const s=t.synth;c
     if(p<0.3){const n2=audioCtx.currentTime;const o2=audioCtx.createOscillator();const g2=audioCtx.createGain();o2.type="triangle";o2.frequency.setValueAtTime(freq*2,n2);g2.gain.setValueAtTime(0.03*musicVolume,n2);g2.gain.exponentialRampToValueAtTime(0.001,n2+dur*0.5);o2.connect(g2).connect(audioCtx.destination);o2.start(n2);o2.stop(n2+dur*0.5);}};
   note();currentTrackLoopTimer=setInterval(note,interval*1000);}
 function stopMusic(){if(currentTrackLoopTimer){clearInterval(currentTrackLoopTimer);currentTrackLoopTimer=null;}if(musicSource){try{musicSource.pause();musicSource.currentTime=0;}catch(e){}musicSource=null;}}
-// ВАЖНО: если трек уже играет — НЕ перезапускаем
 function playTrackByKey(key,forceRestart){ensureAudio();
-  if(!forceRestart&&currentTrackKey===key&&(musicSource||currentTrackLoopTimer))return; // уже играет — не трогаем
+  if(!forceRestart&&currentTrackKey===key&&(musicSource||currentTrackLoopTimer))return;
   stopMusic();currentTrackKey=key;const t=TRACKS[key];if(!t)return;
   if(!t.file){startSynthTrack(key);return;}
   const audio=new Audio();audio.src=t.file;audio.loop=true;audio.volume=musicVolume*masterVolume;let failed=false;
@@ -228,7 +223,6 @@ function playTrackByKey(key,forceRestart){ensureAudio();
   audio.play().then(()=>{musicSource=audio;}).catch(()=>{if(!failed){failed=true;startSynthTrack(key);}});}
 function updateMusicVolume(){if(musicSource)musicSource.volume=musicVolume*masterVolume;}
 
-// СЛОТЫ
 function defaultSlot(name){return{name:name,unlocked:1,unlockedPage2:0,unlockedPage3:0,bossDefeated:false,hellBossDefeated:false,runes:0,menuTheme:"default",cursorTheme:"default",ownedMenuThemes:["default"],ownedCursorThemes:["default"],musicMenu:"default",musicGame:"default",ownedTracks:["default"]};}
 function loadSlots(){try{const raw=localStorage.getItem(STORAGE_SLOTS);if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length===SLOT_COUNT)return d.map((s,i)=>Object.assign(defaultSlot("Игрок "+(i+1)),s));}}catch(e){}const a=[];for(let i=0;i<SLOT_COUNT;i++)a.push(defaultSlot("Игрок "+(i+1)));return a;}
 function saveSlots(){try{localStorage.setItem(STORAGE_SLOTS,JSON.stringify(slots));}catch(e){}}
@@ -247,7 +241,6 @@ const touch={moveTouchId:null,moveStartX:0,moveStartY:0,moveDX:0,moveDY:0,lookTo
 let isTouchDevice=("ontouchstart"in window)||navigator.maxTouchPoints>0;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}}
 
-// ЗАГРУЗКА УРОВНЯ — БЕЗ перезапуска музыки, если трек не сменился
 function loadLevel(idx,page){
   isBossLevel=(page===1&&idx===PAGE1_RAW.length);
   isHellBossLevel=(page===3&&idx===PAGE3_RAW.length);
@@ -277,9 +270,7 @@ function loadLevel(idx,page){
     const items=page>=2?8:5;for(let i=n;i<Math.min(n+items,free.length);i++)pickups.push({x:free[i].x,y:free[i].y,kind:i%2===0?"medkit":"ammo"});
   }
   gameOver=false;win=false;
-  // Музыка: играем трек игры, но НЕ перезапускаем, если он уже играет
-  const s=getSlot();
-  playTrackByKey(s.musicGame||"default",false);
+  const s=getSlot();playTrackByKey(s.musicGame||"default",false);
 }
 
 function isWall(x,y){if(x<0||y<0||y>=grid.length||x>=grid[0].length)return true;return grid[y|0][x|0]!==0;}
@@ -353,7 +344,6 @@ function renderHud(){
   ctx.font="bold 18px Consolas, monospace";ctx.fillStyle=isHellBossLevel?"#ff4020":isPage3?"#ff8040":isPage2?"#d0a0ff":"#dcdcf0";const tw=ctx.measureText(title).width;ctx.fillText(title,VW/2-tw/2,55);
 }
 
-// ФОНЫ (10 штук)
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*VW,y:Math.random()*VH,r:Math.random()<0.75?1:2,speed:8+Math.random()*37,alpha:60+Math.random()*140,color:["#c8dcff","#ffe6c8","#dcc8ff","#ffffff"][(Math.random()*4)|0],phase:Math.random()*6.28});
 const matrixCols=[];for(let i=0;i<60;i++)matrixCols.push({x:Math.random()*VW,y:Math.random()*VH,speed:40+Math.random()*80,char:String.fromCharCode(0x30A0+Math.floor(Math.random()*96))});
 const snowflakes=[];for(let i=0;i<80;i++)snowflakes.push({x:Math.random()*VW,y:Math.random()*VH,r:1+Math.random()*2,speed:20+Math.random()*60});
@@ -503,12 +493,123 @@ function drawConfirmDialog(dt){
   ctx.fillStyle="rgb("+Math.round(40+confirmHoverNo*25)+","+Math.round(50+confirmHoverNo*30)+",70)";roundRect(noX,by,bw,bh,10);ctx.fill();ctx.strokeStyle="rgb("+Math.round(90+confirmHoverNo*60)+","+Math.round(120+confirmHoverNo*60)+",180)";ctx.lineWidth=2;roundRect(noX,by,bw,bh,10);ctx.stroke();ctx.fillStyle="#e6e6ff";t="ОТМЕНА";ctx.fillText(t,noX+bw/2-ctx.measureText(t).width/2,by+bh/2+7);
 }
 
+// ИСПРАВЛЕНО: правильный переход по уровням
+function advanceAfterWin(){
+  const s=getSlot();
+  // Адский босс
+  if(isHellBossLevel){
+    if(!s.hellBossDefeated){s.hellBossDefeated=true;rewardRunesForLevel(3,levelIdx,false,true);}
+    saveSlots();exitToMenu();return;
+  }
+  // Обычный босс
+  if(isBossLevel){
+    if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false);}
+    saveSlots();exitToMenu();return;
+  }
+  // Страница 3 — адские уровни
+  if(isPage3){
+    rewardRunesForLevel(3,levelIdx,false,false);
+    if(levelIdx+1>=PAGE3_RAW.length){
+      if(s.unlockedPage3<PAGE3_RAW.length+1)s.unlockedPage3=PAGE3_RAW.length+1;
+      saveSlots();
+      levelIdx=PAGE3_RAW.length;
+      loadLevel(levelIdx,3);
+      return;
+    }
+    if(s.unlockedPage3<levelIdx+2)s.unlockedPage3=levelIdx+2;
+    saveSlots();
+    levelIdx=levelIdx+1;
+    loadLevel(levelIdx,3);
+    return;
+  }
+  // Страница 2 — демоны. ИСПРАВЛЕНО: всегда грузим следующий
+  if(isPage2){
+    rewardRunesForLevel(2,levelIdx,false,false);
+    if(levelIdx+1>=PAGE2_RAW.length){exitToMenu();return;}
+    if(s.unlockedPage2<levelIdx+2)s.unlockedPage2=levelIdx+2;
+    saveSlots();
+    levelIdx=levelIdx+1;
+    loadLevel(levelIdx,2);
+    return;
+  }
+  // Страница 1 — обычные уровни
+  rewardRunesForLevel(1,levelIdx,false,false);
+  if(levelIdx+1>s.unlocked){s.unlocked=levelIdx+2;if(s.unlocked>PAGE1_RAW.length+1)s.unlocked=PAGE1_RAW.length+1;}
+  saveSlots();
+  if(levelIdx+1>=PAGE1_RAW.length){levelIdx=PAGE1_RAW.length;loadLevel(levelIdx,1);return;}
+  levelIdx=levelIdx+1;
+  loadLevel(levelIdx,1);
+}
+function rewardRunesForLevel(page,idx,isBoss,isHellBoss){const s=getSlot();if(isHellBoss){s.runes+=500;return;}if(isBoss){s.runes+=300;return;}if(page===3)s.runes+=50;else if(page===2)s.runes+=30;else s.runes+=15;}
+
+function update(dt){
+  menuTime+=dt;
+  if(state===GAME_STATE.PLAYING){
+    if(!gameOver&&!win){
+      const sp=(aiming?1.5:3.0)*dt;let dx=0,dy=0;
+      if(keys["w"]||keys["ц"]){dx+=Math.cos(player.angle)*sp;dy+=Math.sin(player.angle)*sp;}
+      if(keys["s"]||keys["ы"]){dx-=Math.cos(player.angle)*sp;dy-=Math.sin(player.angle)*sp;}
+      if(keys["a"]||keys["ф"]){dx+=Math.cos(player.angle-Math.PI/2)*sp;dy+=Math.sin(player.angle-Math.PI/2)*sp;}
+      if(keys["d"]||keys["в"]){dx+=Math.cos(player.angle+Math.PI/2)*sp;dy+=Math.sin(player.angle+Math.PI/2)*sp;}
+      if(touch.moveTouchId!==null){const speed=(aiming?1.5:3.0)*dt*1.2;const forward=-touch.moveDY;const strafe=touch.moveDX;dx+=(Math.cos(player.angle)*forward-Math.sin(player.angle)*strafe)*speed;dy+=(Math.sin(player.angle)*forward+Math.cos(player.angle)*strafe)*speed;}
+      tryMove(dx,dy);
+      if(document.pointerLockElement===canvas&&mouseDX!==0){const sens=aiming?0.0012:0.0025;player.angle+=mouseDX*sens;mouseDX=0;}else mouseDX=0;
+      player.angle=((player.angle+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+      updateEnemies(dt);
+      for(let i=pickups.length-1;i>=0;i--){const p=pickups[i];if(Math.hypot(p.x-player.x,p.y-player.y)<0.5){if(p.kind==="medkit")player.hp=Math.min(100,player.hp+25);else player.ammo+=20;pickups.splice(i,1);playPickup();}}
+      player.anim=Math.max(0,player.anim-dt*4);player.flash=Math.max(0,player.flash-dt*8);updateDamageIndicators(dt);
+      if(isBossLevel||isHellBossLevel){if(boss&&!boss.alive)win=true;}else{if(exitPos&&Math.hypot(exitPos.x-player.x,exitPos.y-player.y)<0.6)win=true;}
+      if(player.hp<=0)gameOver=true;
+    }else{player.anim=Math.max(0,player.anim-dt*4);player.flash=Math.max(0,player.flash-dt*8);updateDamageIndicators(dt);}
+  }else if(state===GAME_STATE.MENU){updateMenuButtons(dt);}
+}
+function drawTouchControls(){const joyX=JOY_X,joyY=VH-JOY_Y;const fireX=VW-FIRE_BTN.x,fireY=VH-FIRE_BTN.y;const aimX=VW-AIM_BTN.x,aimY=VH-AIM_BTN.y;const swapX=VW-SWAP_BTN.x,swapY=VH-SWAP_BTN.y;
+  ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(joyX,joyY,JOY_R,0,7);ctx.stroke();ctx.fillStyle="rgba(255,255,255,0.15)";ctx.beginPath();ctx.arc(joyX+touch.moveDX*JOY_R,joyY+touch.moveDY*JOY_R,28,0,7);ctx.fill();
+  ctx.fillStyle="rgba(220,50,50,0.35)";ctx.beginPath();ctx.arc(fireX,fireY,FIRE_BTN.r,0,7);ctx.fill();ctx.strokeStyle="rgba(255,150,150,0.7)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(fireX,fireY,FIRE_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 16px Consolas, monospace";ctx.fillText("ОГОНЬ",fireX-30,fireY+5);
+  ctx.fillStyle=aiming?"rgba(50,220,90,0.5)":"rgba(90,180,90,0.3)";ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#b4ffb4";ctx.lineWidth=3;ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ПРИЦЕЛ",aimX-26,aimY+4);
+  ctx.fillStyle="rgba(80,140,220,0.3)";ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#8cb4ff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ОРУЖ.",swapX-22,swapY+4);}
+function render(dt){
+  if(state===GAME_STATE.MENU){drawMenuBg(dt);drawTitle();
+    ctx.font="18px Consolas, monospace";ctx.fillStyle="#b4b4dc";const act=getSlot();
+    const sub="Игрок: "+act.name+"  |  Руны: "+act.runes+"  |  Стр1: "+Math.max(0,act.unlocked-1)+"/52"+"  |  Стр2: "+act.unlockedPage2+"/31"+"  |  Стр3: "+act.unlockedPage3+"/21";
+    ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,158);drawMenuButtons();
+    ctx.fillStyle="#8c8c9c";ctx.font="14px Consolas, monospace";const hint="ESC — выход   |   слот "+(activeSlot+1)+" / "+SLOT_COUNT;ctx.fillText(hint,VW/2-ctx.measureText(hint).width/2,VH-35);
+    ctx.fillStyle="#64647c";ctx.fillText("v7.0-js",VW-80,VH-15);
+  }else if(state===GAME_STATE.SLOTS)drawSlotScreen(dt);
+  else if(state===GAME_STATE.RENAME)drawRenameScreen(dt);
+  else if(state===GAME_STATE.LEVELS)drawLevelsScreen(dt);
+  else if(state===GAME_STATE.SHOP)drawShopScreen(dt);
+  else if(state===GAME_STATE.SETTINGS)drawSettingsScreen(dt);
+  else if(state===GAME_STATE.CONFIRM_RESET){drawMenuBg(dt*0.2);drawConfirmDialog(dt);}
+  else if(state===GAME_STATE.PLAYING){
+    renderWalls();renderSprites();renderWeapon();renderCrosshair();renderDamageIndicators();renderLowHpWarning();renderMinimap();renderHud();
+    if(isBossLevel||isHellBossLevel)renderBossBar();
+    if(isTouchDevice)drawTouchControls();
+    if(gameOver||win){ctx.fillStyle="rgba(0,0,0,0.72)";ctx.fillRect(0,0,VW,VH);ctx.font="bold 52px Consolas, monospace";
+      if(gameOver){ctx.fillStyle="#ff3c3c";const m=isHellBossLevel?"ВЛАДЫКА ПРЕИСПОДНЕЙ УБИЛ ВАС":isBossLevel?"БОСС ПОБЕДИЛ":"ВЫ ПОГИБЛИ";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
+      else if(isHellBossLevel){ctx.fillStyle="#ff8020";const m="★★★ ВЛАДЫКА ПРЕИСПОДНЕЙ ПАЛ! ★★★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffcc80";const s2="+500 рун! Вы прошли игру полностью.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
+      else if(isBossLevel){ctx.fillStyle="#ffcc00";const m="★ ПОБЕДА! БОСС ПОВЕРЖЕН ★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffe6a0";const s2="+300 рун! Страница 2 открыта.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
+      else{ctx.fillStyle="#3cff78";const m=isPage3?"АД УР. "+(levelIdx+1)+" ПРОЙДЕН!":isPage2?"УР. "+(levelIdx+1)+" СТР. 2 ПРОЙДЕН!":"УРОВЕНЬ "+(levelIdx+1)+" ПРОЙДЕН!";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
+      ctx.font="20px Consolas, monospace";ctx.fillStyle="#dcdcdc";const sub="R — заново   |   Enter — продолжить   |   ESC — меню";ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,VH/2+80);
+    }
+  }
+  drawCursor(performance.now());
+}
+function loop(now){const dt=Math.min((now-lastTime)/1000||0.016,0.05);lastTime=now;update(dt);render(dt);requestAnimationFrame(loop);}
+setTimeout(()=>{try{ensureAudio();playTrackByKey(getSlot().musicMenu||"default",true);}catch(e){}},500);
+lastTime=performance.now();requestAnimationFrame(loop);
+
 let mouseX=VW/2,mouseY=VH/2;const keys={};
 window.addEventListener("keydown",(e)=>{
   keys[e.key.toLowerCase()]=true;
   if(state===GAME_STATE.RENAME){if(e.key==="Enter"){const name=(renameBuffer.trim()||("Игрок "+(renameSlotIdx+1))).slice(0,20);slots[renameSlotIdx].name=name;saveSlots();state=GAME_STATE.SLOTS;rebuildSlotButtons();}else if(e.key==="Escape"){state=GAME_STATE.SLOTS;rebuildSlotButtons();}else if(e.key==="Backspace"){renameBuffer=renameBuffer.slice(0,-1);}else if(e.key.length===1&&renameBuffer.length<20){renameBuffer+=e.key;}e.preventDefault();return;}
   if(e.key==="Escape"){if(state===GAME_STATE.PLAYING)exitToMenu();else if(state===GAME_STATE.LEVELS||state===GAME_STATE.SETTINGS||state===GAME_STATE.SLOTS||state===GAME_STATE.SHOP){state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();}else if(state===GAME_STATE.CONFIRM_RESET){state=GAME_STATE.MENU;rebuildMenuButtons();}}
-  if(e.key==="Enter"){if(state===GAME_STATE.PLAYING&&(gameOver||win)){if(win)advanceAfterWin();else exitToMenu();}}
+  if(e.key==="Enter"){
+    if(state===GAME_STATE.PLAYING){
+      if(win){advanceAfterWin();}
+      else if(gameOver){exitToMenu();}
+    }
+  }
   if((e.key==="r"||e.key==="к"||e.code==="KeyR")&&state===GAME_STATE.PLAYING&&(gameOver||win)){loadLevel(levelIdx,isPage3?3:isPage2?2:1);}
   if((e.key==="q"||e.key==="й"||e.code==="KeyQ")&&state===GAME_STATE.PLAYING&&!gameOver&&!win){player.weapon=player.weapon==="pistol"?"shotgun":"pistol";}
   if(state===GAME_STATE.PLAYING)e.preventDefault();
@@ -624,126 +725,6 @@ function doMenuAction(action){
   else if(action==="quit"){document.body.innerHTML="<div style='color:#fff;font-family:Consolas;padding:40px;font-size:20px'>Спасибо за игру!<br><br>Обновите страницу, чтобы вернуться.</div>";}
 }
 function exitToMenu(){if(document.exitPointerLock)document.exitPointerLock();aiming=false;touch.moveTouchId=null;touch.lookTouchId=null;touch.moveDX=0;touch.moveDY=0;state=GAME_STATE.MENU;menuTime=0;rebuildMenuButtons();playTrackByKey(getSlot().musicMenu||"default",true);}
-function rewardRunesForLevel(page,idx,isBoss,isHellBoss){const s=getSlot();if(isHellBoss){s.runes+=500;return;}if(isBoss){s.runes+=300;return;}if(page===3)s.runes+=50;else if(page===2)s.runes+=30;else s.runes+=15;}
-
-// ИСПРАВЛЕНО: правильный переход по уровням
-function advanceAfterWin(){
-  const s=getSlot();
-  // Финальный адский босс
-  if(isHellBossLevel){
-    if(!s.hellBossDefeated){s.hellBossDefeated=true;rewardRunesForLevel(3,levelIdx,false,true);}
-    saveSlots();exitToMenu();return;
-  }
-  // Обычный босс
-  if(isBossLevel){
-    if(!s.bossDefeated){s.bossDefeated=true;s.unlockedPage2=1;rewardRunesForLevel(1,levelIdx,true,false);}
-    saveSlots();exitToMenu();return;
-  }
-  // Страница 3 (адские уровни)
-  if(isPage3){
-    rewardRunesForLevel(3,levelIdx,false,false);
-    // Если только что прошли 20-й адский уровень — открываем Адского Босса
-    if(levelIdx+1>=PAGE3_RAW.length){
-      if(s.unlockedPage3<PAGE3_RAW.length+1)s.unlockedPage3=PAGE3_RAW.length+1;
-      saveSlots();
-      levelIdx=PAGE3_RAW.length;   // индекс адского босса
-      loadLevel(levelIdx,3);
-      return;
-    }
-    if(s.unlockedPage3<levelIdx+2)s.unlockedPage3=levelIdx+2;
-    saveSlots();
-    levelIdx+=1;
-    loadLevel(levelIdx,3);
-    return;
-  }
-  // Страница 2 (демоны)
-  if(isPage2){
-    rewardRunesForLevel(2,levelIdx,false,false);
-    // Если прошли все 30 уровней демонов — выходим в меню
-    if(levelIdx+1>=PAGE2_RAW.length){
-      exitToMenu();
-      return;
-    }
-    if(s.unlockedPage2<levelIdx+2)s.unlockedPage2=levelIdx+2;
-    saveSlots();
-    levelIdx+=1;
-    loadLevel(levelIdx,2);
-    return;
-  }
-  // Страница 1 (обычные уровни)
-  rewardRunesForLevel(1,levelIdx,false,false);
-  // Открываем следующий уровень
-  if(levelIdx+1>s.unlocked){
-    s.unlocked=levelIdx+2;
-    if(s.unlocked>PAGE1_RAW.length+1)s.unlocked=PAGE1_RAW.length+1;
-  }
-  saveSlots();
-  // Если прошли 51-й (последний обычный) — переходим к боссу
-  if(levelIdx+1>=PAGE1_RAW.length){
-    levelIdx=PAGE1_RAW.length;  // индекс босса
-    loadLevel(levelIdx,1);
-    return;
-  }
-  levelIdx+=1;
-  loadLevel(levelIdx,1);
-}
-
-function update(dt){
-  menuTime+=dt;
-  if(state===GAME_STATE.PLAYING){
-    if(!gameOver&&!win){
-      const sp=(aiming?1.5:3.0)*dt;let dx=0,dy=0;
-      if(keys["w"]||keys["ц"]){dx+=Math.cos(player.angle)*sp;dy+=Math.sin(player.angle)*sp;}
-      if(keys["s"]||keys["ы"]){dx-=Math.cos(player.angle)*sp;dy-=Math.sin(player.angle)*sp;}
-      if(keys["a"]||keys["ф"]){dx+=Math.cos(player.angle-Math.PI/2)*sp;dy+=Math.sin(player.angle-Math.PI/2)*sp;}
-      if(keys["d"]||keys["в"]){dx+=Math.cos(player.angle+Math.PI/2)*sp;dy+=Math.sin(player.angle+Math.PI/2)*sp;}
-      if(touch.moveTouchId!==null){const speed=(aiming?1.5:3.0)*dt*1.2;const forward=-touch.moveDY;const strafe=touch.moveDX;dx+=(Math.cos(player.angle)*forward-Math.sin(player.angle)*strafe)*speed;dy+=(Math.sin(player.angle)*forward+Math.cos(player.angle)*strafe)*speed;}
-      tryMove(dx,dy);
-      if(document.pointerLockElement===canvas&&mouseDX!==0){const sens=aiming?0.0012:0.0025;player.angle+=mouseDX*sens;mouseDX=0;}else mouseDX=0;
-      player.angle=((player.angle+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
-      updateEnemies(dt);
-      for(let i=pickups.length-1;i>=0;i--){const p=pickups[i];if(Math.hypot(p.x-player.x,p.y-player.y)<0.5){if(p.kind==="medkit")player.hp=Math.min(100,player.hp+25);else player.ammo+=20;pickups.splice(i,1);playPickup();}}
-      player.anim=Math.max(0,player.anim-dt*4);player.flash=Math.max(0,player.flash-dt*8);updateDamageIndicators(dt);
-      if(isBossLevel||isHellBossLevel){if(boss&&!boss.alive)win=true;}else{if(exitPos&&Math.hypot(exitPos.x-player.x,exitPos.y-player.y)<0.6)win=true;}
-      if(player.hp<=0)gameOver=true;
-    }else{player.anim=Math.max(0,player.anim-dt*4);player.flash=Math.max(0,player.flash-dt*8);updateDamageIndicators(dt);}
-  }else if(state===GAME_STATE.MENU){updateMenuButtons(dt);}
-}
-function drawTouchControls(){const joyX=JOY_X,joyY=VH-JOY_Y;const fireX=VW-FIRE_BTN.x,fireY=VH-FIRE_BTN.y;const aimX=VW-AIM_BTN.x,aimY=VH-AIM_BTN.y;const swapX=VW-SWAP_BTN.x,swapY=VH-SWAP_BTN.y;
-  ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(joyX,joyY,JOY_R,0,7);ctx.stroke();ctx.fillStyle="rgba(255,255,255,0.15)";ctx.beginPath();ctx.arc(joyX+touch.moveDX*JOY_R,joyY+touch.moveDY*JOY_R,28,0,7);ctx.fill();
-  ctx.fillStyle="rgba(220,50,50,0.35)";ctx.beginPath();ctx.arc(fireX,fireY,FIRE_BTN.r,0,7);ctx.fill();ctx.strokeStyle="rgba(255,150,150,0.7)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(fireX,fireY,FIRE_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 16px Consolas, monospace";ctx.fillText("ОГОНЬ",fireX-30,fireY+5);
-  ctx.fillStyle=aiming?"rgba(50,220,90,0.5)":"rgba(90,180,90,0.3)";ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#b4ffb4";ctx.lineWidth=3;ctx.beginPath();ctx.arc(aimX,aimY,AIM_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ПРИЦЕЛ",aimX-26,aimY+4);
-  ctx.fillStyle="rgba(80,140,220,0.3)";ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.fill();ctx.strokeStyle="#8cb4ff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(swapX,swapY,SWAP_BTN.r,0,7);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px Consolas, monospace";ctx.fillText("ОРУЖ.",swapX-22,swapY+4);}
-function render(dt){
-  if(state===GAME_STATE.MENU){drawMenuBg(dt);drawTitle();
-    ctx.font="18px Consolas, monospace";ctx.fillStyle="#b4b4dc";const act=getSlot();
-    const sub="Игрок: "+act.name+"  |  Руны: "+act.runes+"  |  Стр1: "+Math.max(0,act.unlocked-1)+"/52"+"  |  Стр2: "+act.unlockedPage2+"/31"+"  |  Стр3: "+act.unlockedPage3+"/21";
-    ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,158);drawMenuButtons();
-    ctx.fillStyle="#8c8c9c";ctx.font="14px Consolas, monospace";const hint="ESC — выход   |   слот "+(activeSlot+1)+" / "+SLOT_COUNT;ctx.fillText(hint,VW/2-ctx.measureText(hint).width/2,VH-35);
-    ctx.fillStyle="#64647c";ctx.fillText("v6.1-js",VW-80,VH-15);
-  }else if(state===GAME_STATE.SLOTS)drawSlotScreen(dt);
-  else if(state===GAME_STATE.RENAME)drawRenameScreen(dt);
-  else if(state===GAME_STATE.LEVELS)drawLevelsScreen(dt);
-  else if(state===GAME_STATE.SHOP)drawShopScreen(dt);
-  else if(state===GAME_STATE.SETTINGS)drawSettingsScreen(dt);
-  else if(state===GAME_STATE.CONFIRM_RESET){drawMenuBg(dt*0.2);drawConfirmDialog(dt);}
-  else if(state===GAME_STATE.PLAYING){
-    renderWalls();renderSprites();renderWeapon();renderCrosshair();renderDamageIndicators();renderLowHpWarning();renderMinimap();renderHud();
-    if(isBossLevel||isHellBossLevel)renderBossBar();
-    if(isTouchDevice)drawTouchControls();
-    if(gameOver||win){ctx.fillStyle="rgba(0,0,0,0.72)";ctx.fillRect(0,0,VW,VH);ctx.font="bold 52px Consolas, monospace";
-      if(gameOver){ctx.fillStyle="#ff3c3c";const m=isHellBossLevel?"ВЛАДЫКА ПРЕИСПОДНЕЙ УБИЛ ВАС":isBossLevel?"БОСС ПОБЕДИЛ":"ВЫ ПОГИБЛИ";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
-      else if(isHellBossLevel){ctx.fillStyle="#ff8020";const m="★★★ ВЛАДЫКА ПРЕИСПОДНЕЙ ПАЛ! ★★★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffcc80";const s2="+500 рун! Вы прошли игру полностью.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
-      else if(isBossLevel){ctx.fillStyle="#ffcc00";const m="★ ПОБЕДА! БОСС ПОВЕРЖЕН ★";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-60);ctx.font="22px Consolas, monospace";ctx.fillStyle="#ffe6a0";const s2="+300 рун! Страница 2 открыта.";ctx.fillText(s2,VW/2-ctx.measureText(s2).width/2,VH/2);}
-      else{ctx.fillStyle="#3cff78";const m=isPage3?"АД УР. "+(levelIdx+1)+" ПРОЙДЕН!":isPage2?"УР. "+(levelIdx+1)+" СТР. 2 ПРОЙДЕН!":"УРОВЕНЬ "+(levelIdx+1)+" ПРОЙДЕН!";ctx.fillText(m,VW/2-ctx.measureText(m).width/2,VH/2-40);}
-      ctx.font="20px Consolas, monospace";ctx.fillStyle="#dcdcdc";const sub="R — заново   |   Enter — продолжить   |   ESC — меню";ctx.fillText(sub,VW/2-ctx.measureText(sub).width/2,VH/2+80);
-    }
-  }
-  drawCursor(performance.now());
-}
-function loop(now){const dt=Math.min((now-lastTime)/1000||0.016,0.05);lastTime=now;update(dt);render(dt);requestAnimationFrame(loop);}
-setTimeout(()=>{try{ensureAudio();playTrackByKey(getSlot().musicMenu||"default",true);}catch(e){}},500);
-lastTime=performance.now();requestAnimationFrame(loop);
 </script>
 </body>
 </html>
