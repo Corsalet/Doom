@@ -350,7 +350,7 @@ function loadLevel(idx,page,circle){
   isBossLevel=false;isHellBossLevel=false;isCircleBoss=false;isPage2=false;isPage3=false;
   let raw;
   if(page===1){if(idx===PAGE1_RAW.length){isBossLevel=true;raw=BOSS_ARENA;}else raw=PAGE1_RAW[idx];}
-  else if(page===2){if(idx===PAGE2_RAW.length){isHellBossLevel=true;raw=HELL_BOSS_ARENA;}else raw=PAGE2_RAW[idx];}
+  else if(page===2){isPage2=true;if(idx===PAGE2_RAW.length){isHellBossLevel=true;raw=HELL_BOSS_ARENA;}else raw=PAGE2_RAW[idx];}
   else if(page===3){currentCircle=circle||0;if(idx===10){isCircleBoss=true;raw=HELL_BOSS_ARENA;}else raw=getCircleLevelMap(currentCircle,idx);isPage3=true;}
   const h=raw.length,w=raw[0].length;grid=[];exitPos=null;
   for(let y=0;y<h;y++){const row=new Int8Array(w);for(let x=0;x<w;x++){const ch=raw[y][x];row[x]=ch==="1"?1:ch==="2"?2:0;if(ch==="2")exitPos={x:x+0.5,y:y+0.5};}grid.push(row);}
@@ -395,8 +395,7 @@ function updateEnemies(dt){
       if(d>1.5&&d<(isCirc?16:isHell?14:12)){
         const sp=isCirc?1.2:isHell?1.1:0.8;
         const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;
-        if(!isWall(ny,e.x))e.y=ny;
-        if(!isWall(e.x,nx))e.x=nx;
+        if(!isWall(nx,ny)&&hasLineOfSight(e.x,e.y,nx,ny)){e.x=nx;e.y=ny;}
       }
       e.timer-=dt;
       if(vis&&d<(isCirc?18:isHell?16:14)&&e.timer<=0){
@@ -407,9 +406,9 @@ function updateEnemies(dt){
         for(let k=0;k<sh;k++)if(Math.random()<0.75)takeDamage(dmMin+Math.floor(Math.random()*(dmMax-dmMin+1)),e.x,e.y);
       }
     }
-    else if(e.isHellDemon){if(d>0.9){const sp=2.6;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.7;if(Math.random()<0.9){const mn=e.dmgMin||30;const mx=e.dmgMax||40;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
-    else if(e.isDemon){if(d>0.9){const sp=2.2;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.8;if(Math.random()<0.85){const mn=e.dmgMin||20;const mx=e.dmgMax||28;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
-    else{if(vis&&d>1.0&&d<8){const nx=e.x+(dx/d)*1.2*dt,ny=e.y+(dy/d)*1.2*dt;if(!isWall(ny,e.x))e.y=ny;if(!isWall(e.x,nx))e.x=nx;}e.timer-=dt;if(vis&&d<6&&e.timer<=0){e.timer=0.9;if(Math.random()<0.6)takeDamage(Math.floor(5+Math.random()*8),e.x,e.y);}}
+    else if(e.isHellDemon){if(d>0.9){const sp=2.6;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(nx,ny)&&hasLineOfSight(e.x,e.y,nx,ny)){e.x=nx;e.y=ny;}}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.7;if(Math.random()<0.9){const mn=e.dmgMin||30;const mx=e.dmgMax||40;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
+    else if(e.isDemon){if(d>0.9){const sp=2.2;const nx=e.x+(dx/d)*sp*dt,ny=e.y+(dy/d)*sp*dt;if(!isWall(nx,ny)&&hasLineOfSight(e.x,e.y,nx,ny)){e.x=nx;e.y=ny;}}e.timer-=dt;if(vis&&d<1.4&&e.timer<=0){e.timer=0.8;if(Math.random()<0.85){const mn=e.dmgMin||20;const mx=e.dmgMax||28;takeDamage(mn+Math.floor(Math.random()*(mx-mn+1)),e.x,e.y);playHit();}}}
+    else{if(vis&&d>1.0&&d<8){const nx=e.x+(dx/d)*1.2*dt,ny=e.y+(dy/d)*1.2*dt;if(!isWall(nx,ny)&&hasLineOfSight(e.x,e.y,nx,ny)){e.x=nx;e.y=ny;}}e.timer-=dt;if(vis&&d<6&&e.timer<=0){e.timer=0.9;if(Math.random()<0.6)takeDamage(Math.floor(5+Math.random()*8),e.x,e.y);}}
   }
   if((isBossLevel||isHellBossLevel||isCircleBoss)&&boss&&boss.alive){bossWaveTimer-=dt;const am=enemies.filter(e=>e.alive&&e.minion).length;if(bossWaveTimer<=0&&am<2){bossWaveNum+=1;bossWaveTimer=6;spawnMinions(isHellBossLevel,isCircleBoss);}}
 }
